@@ -6,6 +6,7 @@ import CompanySettings from '@/components/settings/CompanySettings';
 import ThemeSettings from '@/components/settings/ThemeSettings';
 import EvolutionApiSettings from '@/components/settings/EvolutionApiSettings';
 import InstancesSettings from '@/components/settings/InstancesSettings';
+import SharedLinksSettings from '@/components/settings/SharedLinksSettings';
 import { useSettings } from '@/hooks/useSettings';
 
 const Settings = () => {
@@ -56,6 +57,8 @@ const Settings = () => {
           />
 
           <InstancesSettings />
+
+          <SharedLinksSettings />
 
           <div className="flex justify-end">
             <Button 
