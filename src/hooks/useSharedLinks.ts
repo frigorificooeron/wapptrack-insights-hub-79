@@ -9,9 +9,16 @@ export const useSharedLinks = () => {
 
   const loadSharedLinks = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('shared_links')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -40,10 +47,16 @@ export const useSharedLinks = () => {
     permissions: any;
   }) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('Usuário não autenticado');
+      }
+
       const token = generateToken();
       const { data, error } = await supabase
         .from('shared_links')
         .insert({
+          user_id: user.id,
           token,
           name: linkData.name,
           expires_at: linkData.expiresAt || null,

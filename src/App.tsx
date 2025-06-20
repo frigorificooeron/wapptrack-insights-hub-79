@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+import { SharedAccessProvider } from "./context/SharedAccessContext";
 import { ThemeProvider } from "./hooks/useTheme";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
@@ -14,6 +15,7 @@ import Sales from "./pages/Sales";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import Redirect from "./pages/Redirect";
+import SharedView from "./pages/SharedView";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,43 +28,46 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-            <Routes>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/ir" element={<Redirect />} />
-              
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/leads" element={
-                <ProtectedRoute>
-                  <Leads />
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/campaigns" element={
-                <ProtectedRoute>
-                  <Campaigns />
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/sales" element={
-                <ProtectedRoute>
-                  <Sales />
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/settings" element={
-                <ProtectedRoute>
-                  <Settings />
-                </ProtectedRoute>
-              } />
-              
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <SharedAccessProvider>
+              <Routes>
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/ir" element={<Redirect />} />
+                <Route path="/shared/:token" element={<SharedView />} />
+                
+                <Route path="/dashboard" element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/leads" element={
+                  <ProtectedRoute>
+                    <Leads />
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/campaigns" element={
+                  <ProtectedRoute>
+                    <Campaigns />
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/sales" element={
+                  <ProtectedRoute>
+                    <Sales />
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/settings" element={
+                  <ProtectedRoute>
+                    <Settings />
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </SharedAccessProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
