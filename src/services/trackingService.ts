@@ -42,7 +42,7 @@ export const trackRedirect = async (
       return { targetPhone: '5585998372658' };
     }
 
-    const type = eventType || 'lead';
+    const type = eventType || campaign.event_type || 'lead';
 
     // Para campanhas de redirecionamento WhatsApp
     if (campaign.redirect_type === 'whatsapp') {
@@ -74,6 +74,7 @@ export const trackRedirect = async (
         utm_term: utms?.utm_term || (utms?.fbclid ? `fbclid=${utms.fbclid}` : '') || '',
         // Incluir dados do dispositivo se disponíveis
         ...(deviceData && {
+          location: deviceData.location,
           ip_address: deviceData.ip_address,
           browser: deviceData.browser,
           os: deviceData.os,
@@ -81,7 +82,6 @@ export const trackRedirect = async (
           device_model: deviceData.device_model,
           country: deviceData.country,
           city: deviceData.city,
-          location: deviceData.location,
           screen_resolution: deviceData.screen_resolution,
           timezone: deviceData.timezone,
           language: deviceData.language,

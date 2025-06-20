@@ -23,7 +23,7 @@ export {
 
 export {
   getDashboardStats,
-  getDashboardStats as getDashboardStatsByPeriod, // Add alias for compatibility
+  getDashboardStatsByPeriod,
   getCampaignPerformance,
   getMonthlyStats,
   getTimelineData

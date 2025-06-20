@@ -48,7 +48,15 @@ export const getAttributionReport = async (
   try {
     let query = supabase
       .from('leads')
-      .select('*')
+      .select(`
+        *,
+        campaigns!leads_campaign_id_fkey(
+          utm_source,
+          utm_medium,
+          utm_campaign,
+          name
+        )
+      `)
       .order('created_at', { ascending: false });
 
     if (startDate) {
@@ -73,9 +81,10 @@ export const getAttributionReport = async (
     }>();
 
     leads?.forEach(lead => {
-      const source = lead.utm_source || 'direct';
-      const medium = lead.utm_medium || 'organic';
-      const campaignName = lead.utm_campaign || lead.campaign || 'unknown';
+      const campaign = lead.campaigns;
+      const source = campaign?.utm_source || 'direct';
+      const medium = campaign?.utm_medium || 'organic';
+      const campaignName = campaign?.utm_campaign || campaign?.name || 'unknown';
       
       const key = `${source}-${medium}-${campaignName}`;
       
@@ -97,8 +106,8 @@ export const getAttributionReport = async (
         attribution.conversions++;
       }
       
-      // Use a default score if not available
-      const leadScore = 50; // Default score since we don't have lead_score column
+      // Use a default score if not available - safely access lead_score
+      const leadScore = (lead as any).lead_score || 50;
       attribution.total_score += leadScore;
     });
 
@@ -135,7 +144,11 @@ export const getLeadSourceReport = async (
   try {
     let query = supabase
       .from('leads')
-      .select('created_at, status, utm_source')
+      .select(`
+        created_at,
+        status,
+        campaigns!leads_campaign_id_fkey(utm_source)
+      `)
       .order('created_at', { ascending: true });
 
     if (startDate) {
@@ -161,7 +174,7 @@ export const getLeadSourceReport = async (
 
     leads?.forEach(lead => {
       const date = lead.created_at.split('T')[0]; // Get date part only
-      const source = lead.utm_source || 'other';
+      const source = lead.campaigns?.utm_source || 'other';
       const isConversion = lead.status === 'converted';
       
       if (!dateMap.has(date)) {
@@ -205,32 +218,23 @@ export const getCampaignPerformanceDetails = async (
   endDate?: string
 ): Promise<CampaignPerformanceDetail[]> => {
   try {
-    // Get campaigns and leads separately due to lack of foreign key relationship
-    const { data: campaigns, error: campaignsError } = await supabase
+    let query = supabase
       .from('campaigns')
-      .select('*')
+      .select(`
+        *,
+        leads!leads_campaign_id_fkey(*)
+      `)
       .order('created_at', { ascending: false });
 
-    if (campaignsError) throw campaignsError;
+    const { data: campaigns, error } = await query;
 
-    const { data: leads, error: leadsError } = await supabase
-      .from('leads')
-      .select('*');
-
-    if (leadsError) throw leadsError;
+    if (error) throw error;
 
     return campaigns?.map(campaign => {
-      // Filter leads that belong to this campaign by campaign_id or utm parameters
-      const campaignLeads = leads?.filter(lead => {
-        if (lead.campaign_id === campaign.id) return true;
-        if (lead.utm_source === campaign.utm_source && 
-            lead.utm_medium === campaign.utm_medium && 
-            lead.utm_campaign === campaign.utm_campaign) return true;
-        return false;
-      }) || [];
+      const leads = campaign.leads || [];
       
       // Filter by date if provided
-      const filteredLeads = campaignLeads.filter(lead => {
+      const filteredLeads = leads.filter(lead => {
         if (startDate && lead.created_at < startDate) return false;
         if (endDate && lead.created_at > endDate) return false;
         return true;
@@ -238,12 +242,14 @@ export const getCampaignPerformanceDetails = async (
       
       const totalLeads = filteredLeads.length;
       const qualifiedLeads = filteredLeads.filter(l => 
-        ['contacted', 'qualified', 'converted'].includes(l.status || '')
+        ['contacted', 'qualified', 'converted'].includes(l.status)
       ).length;
       const convertedLeads = filteredLeads.filter(l => l.status === 'converted').length;
       const lostLeads = filteredLeads.filter(l => l.status === 'lost').length;
       
-      const avgLeadScore = 50; // Default score since we don't have lead_score column
+      const avgLeadScore = totalLeads > 0 
+        ? filteredLeads.reduce((sum, lead) => sum + ((lead as any).lead_score || 50), 0) / totalLeads 
+        : 0;
       
       const conversionRate = totalLeads > 0 ? (convertedLeads / totalLeads) * 100 : 0;
       const qualificationRate = totalLeads > 0 ? (qualifiedLeads / totalLeads) * 100 : 0;

@@ -13,143 +13,224 @@ export type Database = {
         Row: {
           active: boolean | null
           advanced_matching_enabled: boolean | null
-          auto_create_leads: boolean | null
           cancellation_keywords: string[] | null
           company_subtitle: string | null
           company_title: string | null
           conversion_api_enabled: boolean | null
           conversion_keywords: string[] | null
-          created_at: string
+          created_at: string | null
           custom_audience_pixel_id: string | null
+          custom_message: string | null
           data_processing_options: string[] | null
           data_processing_options_country: number | null
           data_processing_options_state: number | null
-          evolution_api_key: string | null
-          evolution_base_url: string | null
-          evolution_instance_name: string | null
+          event_type: string | null
           external_id: string | null
           facebook_access_token: string | null
           id: string
           logo_url: string | null
           name: string
           pixel_id: string | null
+          pixel_integration_type: string | null
+          project_id: string | null
           redirect_type: string | null
-          redirect_url: string | null
           server_side_api_enabled: boolean | null
           test_event_code: string | null
           tracking_domain: string | null
-          updated_at: string
+          user_id: string
           utm_campaign: string | null
           utm_content: string | null
           utm_medium: string | null
           utm_source: string | null
           utm_term: string | null
-          webhook_callback_url: string | null
           whatsapp_number: string | null
         }
         Insert: {
           active?: boolean | null
           advanced_matching_enabled?: boolean | null
-          auto_create_leads?: boolean | null
           cancellation_keywords?: string[] | null
           company_subtitle?: string | null
           company_title?: string | null
           conversion_api_enabled?: boolean | null
           conversion_keywords?: string[] | null
-          created_at?: string
+          created_at?: string | null
           custom_audience_pixel_id?: string | null
+          custom_message?: string | null
           data_processing_options?: string[] | null
           data_processing_options_country?: number | null
           data_processing_options_state?: number | null
-          evolution_api_key?: string | null
-          evolution_base_url?: string | null
-          evolution_instance_name?: string | null
+          event_type?: string | null
           external_id?: string | null
           facebook_access_token?: string | null
           id?: string
           logo_url?: string | null
           name: string
           pixel_id?: string | null
+          pixel_integration_type?: string | null
+          project_id?: string | null
           redirect_type?: string | null
-          redirect_url?: string | null
           server_side_api_enabled?: boolean | null
           test_event_code?: string | null
           tracking_domain?: string | null
-          updated_at?: string
+          user_id?: string
           utm_campaign?: string | null
           utm_content?: string | null
           utm_medium?: string | null
           utm_source?: string | null
           utm_term?: string | null
-          webhook_callback_url?: string | null
           whatsapp_number?: string | null
         }
         Update: {
           active?: boolean | null
           advanced_matching_enabled?: boolean | null
-          auto_create_leads?: boolean | null
           cancellation_keywords?: string[] | null
           company_subtitle?: string | null
           company_title?: string | null
           conversion_api_enabled?: boolean | null
           conversion_keywords?: string[] | null
-          created_at?: string
+          created_at?: string | null
           custom_audience_pixel_id?: string | null
+          custom_message?: string | null
           data_processing_options?: string[] | null
           data_processing_options_country?: number | null
           data_processing_options_state?: number | null
-          evolution_api_key?: string | null
-          evolution_base_url?: string | null
-          evolution_instance_name?: string | null
+          event_type?: string | null
           external_id?: string | null
           facebook_access_token?: string | null
           id?: string
           logo_url?: string | null
           name?: string
           pixel_id?: string | null
+          pixel_integration_type?: string | null
+          project_id?: string | null
           redirect_type?: string | null
-          redirect_url?: string | null
           server_side_api_enabled?: boolean | null
           test_event_code?: string | null
           tracking_domain?: string | null
-          updated_at?: string
+          user_id?: string
           utm_campaign?: string | null
           utm_content?: string | null
           utm_medium?: string | null
           utm_source?: string | null
           utm_term?: string | null
-          webhook_callback_url?: string | null
           whatsapp_number?: string | null
         }
         Relationships: []
       }
       company_settings: {
         Row: {
-          company_name: string | null
-          company_subtitle: string | null
+          company_name: string
+          company_subtitle: string
           created_at: string
           id: string
           logo_url: string | null
+          project_id: string | null
           theme: string | null
           updated_at: string
+          user_id: string
         }
         Insert: {
-          company_name?: string | null
-          company_subtitle?: string | null
+          company_name?: string
+          company_subtitle?: string
           created_at?: string
           id?: string
           logo_url?: string | null
+          project_id?: string | null
           theme?: string | null
           updated_at?: string
+          user_id?: string
         }
         Update: {
-          company_name?: string | null
-          company_subtitle?: string | null
+          company_name?: string
+          company_subtitle?: string
           created_at?: string
           id?: string
           logo_url?: string | null
+          project_id?: string | null
           theme?: string | null
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      device_data: {
+        Row: {
+          browser: string | null
+          city: string | null
+          country: string | null
+          created_at: string
+          device_model: string | null
+          device_type: string | null
+          facebook_ad_id: string | null
+          facebook_adset_id: string | null
+          facebook_campaign_id: string | null
+          id: string
+          ip_address: string | null
+          language: string | null
+          location: string | null
+          os: string | null
+          phone: string
+          referrer: string | null
+          screen_resolution: string | null
+          timezone: string | null
+          user_agent: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+        }
+        Insert: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          device_model?: string | null
+          device_type?: string | null
+          facebook_ad_id?: string | null
+          facebook_adset_id?: string | null
+          facebook_campaign_id?: string | null
+          id?: string
+          ip_address?: string | null
+          language?: string | null
+          location?: string | null
+          os?: string | null
+          phone: string
+          referrer?: string | null
+          screen_resolution?: string | null
+          timezone?: string | null
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Update: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          device_model?: string | null
+          device_type?: string | null
+          facebook_ad_id?: string | null
+          facebook_adset_id?: string | null
+          facebook_campaign_id?: string | null
+          id?: string
+          ip_address?: string | null
+          language?: string | null
+          location?: string | null
+          os?: string | null
+          phone?: string
+          referrer?: string | null
+          screen_resolution?: string | null
+          timezone?: string | null
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
         }
         Relationships: []
       }
@@ -159,16 +240,14 @@ export type Database = {
           ad_name: string | null
           ad_set_name: string | null
           browser: string | null
-          campaign: string | null
+          campaign: string
           campaign_id: string | null
           city: string | null
           country: string | null
-          created_at: string
+          created_at: string | null
           custom_fields: Json | null
           device_model: string | null
           device_type: string | null
-          evolution_message_id: string | null
-          evolution_status: string | null
           facebook_ad_id: string | null
           facebook_adset_id: string | null
           facebook_campaign_id: string | null
@@ -185,11 +264,12 @@ export type Database = {
           notes: string | null
           os: string | null
           phone: string
+          project_id: string | null
           screen_resolution: string | null
           status: string | null
           timezone: string | null
           tracking_method: string | null
-          updated_at: string
+          user_id: string
           utm_campaign: string | null
           utm_content: string | null
           utm_medium: string | null
@@ -202,16 +282,14 @@ export type Database = {
           ad_name?: string | null
           ad_set_name?: string | null
           browser?: string | null
-          campaign?: string | null
+          campaign: string
           campaign_id?: string | null
           city?: string | null
           country?: string | null
-          created_at?: string
+          created_at?: string | null
           custom_fields?: Json | null
           device_model?: string | null
           device_type?: string | null
-          evolution_message_id?: string | null
-          evolution_status?: string | null
           facebook_ad_id?: string | null
           facebook_adset_id?: string | null
           facebook_campaign_id?: string | null
@@ -228,11 +306,12 @@ export type Database = {
           notes?: string | null
           os?: string | null
           phone: string
+          project_id?: string | null
           screen_resolution?: string | null
           status?: string | null
           timezone?: string | null
           tracking_method?: string | null
-          updated_at?: string
+          user_id?: string
           utm_campaign?: string | null
           utm_content?: string | null
           utm_medium?: string | null
@@ -245,16 +324,14 @@ export type Database = {
           ad_name?: string | null
           ad_set_name?: string | null
           browser?: string | null
-          campaign?: string | null
+          campaign?: string
           campaign_id?: string | null
           city?: string | null
           country?: string | null
-          created_at?: string
+          created_at?: string | null
           custom_fields?: Json | null
           device_model?: string | null
           device_type?: string | null
-          evolution_message_id?: string | null
-          evolution_status?: string | null
           facebook_ad_id?: string | null
           facebook_adset_id?: string | null
           facebook_campaign_id?: string | null
@@ -271,11 +348,12 @@ export type Database = {
           notes?: string | null
           os?: string | null
           phone?: string
+          project_id?: string | null
           screen_resolution?: string | null
           status?: string | null
           timezone?: string | null
           tracking_method?: string | null
-          updated_at?: string
+          user_id?: string
           utm_campaign?: string | null
           utm_content?: string | null
           utm_medium?: string | null
@@ -283,92 +361,109 @@ export type Database = {
           utm_term?: string | null
           whatsapp_delivery_attempts?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "leads_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
-      pending_leads: {
+      profiles: {
         Row: {
-          campaign_id: string
-          campaign_name: string | null
-          created_at: string
+          created_at: string | null
+          email: string | null
           id: string
-          name: string
-          phone: string
-          status: string | null
-          utm_campaign: string | null
-          utm_content: string | null
-          utm_medium: string | null
-          utm_source: string | null
-          utm_term: string | null
-          webhook_data: Json | null
-          webhook_sent_at: string | null
+          name: string | null
+          updated_at: string | null
         }
         Insert: {
-          campaign_id: string
-          campaign_name?: string | null
-          created_at?: string
-          id?: string
-          name: string
-          phone: string
-          status?: string | null
-          utm_campaign?: string | null
-          utm_content?: string | null
-          utm_medium?: string | null
-          utm_source?: string | null
-          utm_term?: string | null
-          webhook_data?: Json | null
-          webhook_sent_at?: string | null
+          created_at?: string | null
+          email?: string | null
+          id: string
+          name?: string | null
+          updated_at?: string | null
         }
         Update: {
-          campaign_id?: string
-          campaign_name?: string | null
-          created_at?: string
+          created_at?: string | null
+          email?: string | null
           id?: string
+          name?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          logo_url: string | null
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          name: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
           name?: string
-          phone?: string
-          status?: string | null
-          utm_campaign?: string | null
-          utm_content?: string | null
-          utm_medium?: string | null
-          utm_source?: string | null
-          utm_term?: string | null
-          webhook_data?: Json | null
-          webhook_sent_at?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
       sales: {
         Row: {
-          amount: number
-          campaign_id: string | null
-          created_at: string
+          campaign: string
+          date: string | null
           id: string
           lead_id: string | null
+          lead_name: string
           notes: string | null
-          sale_date: string | null
-          status: string | null
-          updated_at: string
+          product: string | null
+          project_id: string | null
+          user_id: string
+          value: number
         }
         Insert: {
-          amount: number
-          campaign_id?: string | null
-          created_at?: string
+          campaign: string
+          date?: string | null
           id?: string
           lead_id?: string | null
+          lead_name: string
           notes?: string | null
-          sale_date?: string | null
-          status?: string | null
-          updated_at?: string
+          product?: string | null
+          project_id?: string | null
+          user_id?: string
+          value: number
         }
         Update: {
-          amount?: number
-          campaign_id?: string | null
-          created_at?: string
+          campaign?: string
+          date?: string | null
           id?: string
           lead_id?: string | null
+          lead_name?: string
           notes?: string | null
-          sale_date?: string | null
-          status?: string | null
-          updated_at?: string
+          product?: string | null
+          project_id?: string | null
+          user_id?: string
+          value?: number
         }
         Relationships: [
           {
@@ -380,47 +475,20 @@ export type Database = {
           },
         ]
       }
-      shared_links: {
+      tracking_sessions: {
         Row: {
+          browser_fingerprint: string | null
+          campaign_id: string | null
           created_at: string
-          expires_at: string | null
+          current_url: string | null
           id: string
-          is_active: boolean
-          name: string
-          permissions: Json
-          token: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          expires_at?: string | null
-          id?: string
-          is_active?: boolean
-          name: string
-          permissions?: Json
-          token: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          expires_at?: string | null
-          id?: string
-          is_active?: boolean
-          name?: string
-          permissions?: Json
-          token?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      utm_clicks: {
-        Row: {
-          created_at: string
-          id: string
-          phone: string
+          ip_address: string | null
+          language: string | null
+          referrer: string | null
+          screen_resolution: string | null
+          session_id: string
+          timezone: string | null
+          user_agent: string | null
           utm_campaign: string | null
           utm_content: string | null
           utm_medium: string | null
@@ -428,9 +496,18 @@ export type Database = {
           utm_term: string | null
         }
         Insert: {
+          browser_fingerprint?: string | null
+          campaign_id?: string | null
           created_at?: string
+          current_url?: string | null
           id?: string
-          phone: string
+          ip_address?: string | null
+          language?: string | null
+          referrer?: string | null
+          screen_resolution?: string | null
+          session_id: string
+          timezone?: string | null
+          user_agent?: string | null
           utm_campaign?: string | null
           utm_content?: string | null
           utm_medium?: string | null
@@ -438,9 +515,18 @@ export type Database = {
           utm_term?: string | null
         }
         Update: {
+          browser_fingerprint?: string | null
+          campaign_id?: string | null
           created_at?: string
+          current_url?: string | null
           id?: string
-          phone?: string
+          ip_address?: string | null
+          language?: string | null
+          referrer?: string | null
+          screen_resolution?: string | null
+          session_id?: string
+          timezone?: string | null
+          user_agent?: string | null
           utm_campaign?: string | null
           utm_content?: string | null
           utm_medium?: string | null
@@ -454,7 +540,68 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_default_project_settings: {
+        Args: { project_id_param: string }
+        Returns: undefined
+      }
+      get_tracking_by_identifiers: {
+        Args: {
+          p_browser_fingerprint?: string
+          p_session_id?: string
+          p_ip_address?: string
+        }
+        Returns: {
+          id: string
+          session_id: string
+          browser_fingerprint: string
+          ip_address: string
+          user_agent: string
+          campaign_id: string
+          utm_source: string
+          utm_medium: string
+          utm_campaign: string
+          utm_content: string
+          utm_term: string
+          created_at: string
+        }[]
+      }
+      insert_tracking_session: {
+        Args: {
+          session_id: string
+          browser_fingerprint?: string
+          ip_address?: string
+          user_agent?: string
+          screen_resolution?: string
+          language?: string
+          timezone?: string
+          referrer?: string
+          current_url?: string
+          campaign_id?: string
+          utm_source?: string
+          utm_medium?: string
+          utm_campaign?: string
+          utm_content?: string
+          utm_term?: string
+        }
+        Returns: undefined
+      }
+      select_from_tracking_sessions: {
+        Args: { where_clause?: string; order_by?: string; limit_count?: number }
+        Returns: {
+          id: string
+          session_id: string
+          browser_fingerprint: string
+          ip_address: string
+          user_agent: string
+          campaign_id: string
+          utm_source: string
+          utm_medium: string
+          utm_campaign: string
+          utm_content: string
+          utm_term: string
+          created_at: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

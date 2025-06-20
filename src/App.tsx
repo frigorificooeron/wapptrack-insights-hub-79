@@ -7,7 +7,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./hooks/useTheme";
 import ProtectedRoute from "./components/ProtectedRoute";
-import PublicRoute from "./components/PublicRoute";
 import Dashboard from "./pages/Dashboard";
 import Leads from "./pages/Leads";
 import Campaigns from "./pages/Campaigns";
@@ -15,7 +14,6 @@ import Sales from "./pages/Sales";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import Redirect from "./pages/Redirect";
-import SharedView from "./pages/SharedView";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,13 +30,6 @@ const App = () => (
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/login" element={<Login />} />
               <Route path="/ir" element={<Redirect />} />
-              
-              {/* Rota pública para links compartilhados */}
-              <Route path="/shared/:token" element={
-                <PublicRoute>
-                  <SharedView />
-                </PublicRoute>
-              } />
               
               <Route path="/dashboard" element={
                 <ProtectedRoute>
