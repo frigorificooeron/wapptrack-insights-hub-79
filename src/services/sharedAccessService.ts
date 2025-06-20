@@ -1,0 +1,96 @@
+import { supabase } from '../integrations/supabase/client';
+
+export interface SharedTokenData {
+  id: string;
+  token: string;
+  permissions: any;
+  name: string;
+  description?: string;
+  created_at: string;
+  expires_at?: string;
+}
+
+export interface CreateSharedTokenParams {
+  name: string;
+  description?: string;
+  permissions: any;
+  expires_at?: string;
+}
+
+export const createSharedToken = async (params: CreateSharedTokenParams): Promise<SharedTokenData | null> => {
+  try {
+    const { data, error } = await supabase.rpc('create_shared_access_token', {
+      p_name: params.name,
+      p_description: params.description || null,
+      p_permissions: params.permissions,
+      p_expires_at: params.expires_at || null,
+    });
+
+    if (error) {
+      console.error('Error creating shared token:', error);
+      throw new Error(`Failed to create shared access token: ${error.message}`);
+    }
+
+    return data?.[0] || null;
+  } catch (error) {
+    console.error('Error in createSharedToken:', error);
+    throw error;
+  }
+};
+
+export const getSharedTokenPermissions = async (token: string): Promise<SharedTokenData | null> => {
+  try {
+    const { data, error } = await supabase.rpc('get_token_permissions', {
+      p_token: token,
+    });
+
+    if (error) {
+      console.error('Error getting token permissions:', error);
+      return null;
+    }
+
+    return data?.[0] || null;
+  } catch (error) {
+    console.error('Error in getSharedTokenPermissions:', error);
+    return null;
+  }
+};
+
+export const deactivateSharedToken = async (tokenId: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase.rpc('deactivate_shared_token', {
+      p_token_id: tokenId,
+    });
+
+    if (error) {
+      console.error('Error deactivating token:', error);
+      return false;
+    }
+
+    return data === true;
+  } catch (error) {
+    console.error('Error in deactivateSharedToken:', error);
+    return false;
+  }
+};
+
+export const getUserSharedTokens = async (): Promise<SharedTokenData[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('shared_access_tokens')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error getting user shared tokens:', error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error in getUserSharedTokens:', error);
+    return [];
+  }
+};
+
