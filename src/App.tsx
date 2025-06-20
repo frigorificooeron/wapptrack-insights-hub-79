@@ -16,6 +16,9 @@ import Login from "./pages/Login";
 import Redirect from "./pages/Redirect";
 import NotFound from "./pages/NotFound";
 
+import SharedLayout from "./layouts/SharedLayout";
+import { SharedAccessProvider } from "./context/SharedAccessContext";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -27,6 +30,14 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <Routes>
+              <Route path="/shared/:token" element={<SharedAccessProvider><SharedLayout /></SharedAccessProvider>}>
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="leads" element={<Leads />} />
+                <Route path="campaigns" element={<Campaigns />} />
+                <Route path="sales" element={<Sales />} />
+                <Route path="settings" element={<Settings />} />
+                <Route path="*" element={<Navigate to="dashboard" replace />} />
+              </Route>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/login" element={<Login />} />
               <Route path="/ir" element={<Redirect />} />
