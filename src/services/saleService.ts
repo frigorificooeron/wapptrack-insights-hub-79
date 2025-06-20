@@ -7,18 +7,18 @@ export const getSales = async (): Promise<Sale[]> => {
     const { data: sales, error } = await supabase
       .from('sales')
       .select('*')
-      .order('date', { ascending: false });
+      .order('sale_date', { ascending: false });
 
     if (error) throw error;
 
     return (sales || []).map(sale => ({
       id: sale.id,
-      value: sale.value,
-      date: sale.date,
+      value: sale.amount,
+      date: sale.sale_date || sale.created_at,
       lead_id: sale.lead_id,
-      lead_name: sale.lead_name,
-      campaign: sale.campaign,
-      product: sale.product,
+      lead_name: '', // This would need to be joined from leads table
+      campaign: '', // This would need to be joined from campaigns table
+      product: '', // Not available in current schema
       notes: sale.notes
     }));
   } catch (error) {
@@ -32,12 +32,10 @@ export const addSale = async (sale: Omit<Sale, 'id'>): Promise<Sale> => {
     const { data, error } = await supabase
       .from('sales')
       .insert({
-        value: sale.value,
-        date: sale.date,
+        amount: sale.value,
+        sale_date: sale.date,
         lead_id: sale.lead_id,
-        lead_name: sale.lead_name,
-        campaign: sale.campaign,
-        product: sale.product,
+        campaign_id: null, // Map from campaign name if needed
         notes: sale.notes
       })
       .select()
@@ -47,12 +45,12 @@ export const addSale = async (sale: Omit<Sale, 'id'>): Promise<Sale> => {
 
     return {
       id: data.id,
-      value: data.value,
-      date: data.date,
+      value: data.amount,
+      date: data.sale_date || data.created_at,
       lead_id: data.lead_id,
-      lead_name: data.lead_name,
-      campaign: data.campaign,
-      product: data.product,
+      lead_name: sale.lead_name,
+      campaign: sale.campaign,
+      product: sale.product,
       notes: data.notes
     };
   } catch (error) {
@@ -64,12 +62,9 @@ export const addSale = async (sale: Omit<Sale, 'id'>): Promise<Sale> => {
 export const updateSale = async (id: string, sale: Partial<Sale>): Promise<Sale> => {
   try {
     const updateData: any = {};
-    if (sale.value !== undefined) updateData.value = sale.value;
-    if (sale.date) updateData.date = sale.date;
+    if (sale.value !== undefined) updateData.amount = sale.value;
+    if (sale.date) updateData.sale_date = sale.date;
     if (sale.lead_id) updateData.lead_id = sale.lead_id;
-    if (sale.lead_name) updateData.lead_name = sale.lead_name;
-    if (sale.campaign) updateData.campaign = sale.campaign;
-    if (sale.product !== undefined) updateData.product = sale.product;
     if (sale.notes !== undefined) updateData.notes = sale.notes;
 
     const { data, error } = await supabase
@@ -83,12 +78,12 @@ export const updateSale = async (id: string, sale: Partial<Sale>): Promise<Sale>
 
     return {
       id: data.id,
-      value: data.value,
-      date: data.date,
+      value: data.amount,
+      date: data.sale_date || data.created_at,
       lead_id: data.lead_id,
-      lead_name: data.lead_name,
-      campaign: data.campaign,
-      product: data.product,
+      lead_name: sale.lead_name || '',
+      campaign: sale.campaign || '',
+      product: sale.product || '',
       notes: data.notes
     };
   } catch (error) {
