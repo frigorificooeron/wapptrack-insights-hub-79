@@ -5,7 +5,7 @@
 CREATE OR REPLACE FUNCTION create_shared_access_token(
   p_name VARCHAR(255),
   p_description TEXT DEFAULT NULL,
-  p_permissions JSONB DEFAULT 
+  p_permissions JSONB DEFAULT NULL,  -- Added NULL here
   p_expires_at TIMESTAMP WITH TIME ZONE DEFAULT NULL
 )
 RETURNS TABLE(
@@ -104,5 +104,3 @@ BEGIN
   RETURN FOUND;
 END;
 $$;
-
-
