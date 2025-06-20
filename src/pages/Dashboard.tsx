@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import MainLayout from '@/components/MainLayout';
 import StatCard from '@/components/StatCard';
@@ -7,7 +6,7 @@ import BarChart from '@/components/charts/BarChart';
 import LineChart from '@/components/charts/LineChart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LayoutDashboard, Users, MessageSquare, DollarSign, TrendingUp, Calendar } from 'lucide-react';
-import { getDashboardStatsByPeriod, getCampaignPerformance, getTimelineData } from '@/services/dataService';
+import { getDashboardStats, getCampaignPerformance, getTimelineData } from '@/services/dataService';
 import { DashboardStats, CampaignPerformance, DateRange, TimelineDataPoint } from '@/types';
 import { formatCurrency, formatPercent } from '@/lib/utils';
 
