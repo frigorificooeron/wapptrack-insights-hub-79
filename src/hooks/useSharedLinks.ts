@@ -125,6 +125,7 @@ export const useSharedLinks = () => {
 
   const getSharedLinkByToken = async (token: string) => {
     try {
+      // Fazemos a consulta sem autenticação para permitir acesso público
       const { data, error } = await supabase
         .from('shared_links')
         .select('*')

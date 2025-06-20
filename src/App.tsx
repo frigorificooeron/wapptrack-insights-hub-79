@@ -8,6 +8,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { SharedAccessProvider } from "./context/SharedAccessContext";
 import { ThemeProvider } from "./hooks/useTheme";
 import ProtectedRoute from "./components/ProtectedRoute";
+import PublicRoute from "./components/PublicRoute";
 import Dashboard from "./pages/Dashboard";
 import Leads from "./pages/Leads";
 import Campaigns from "./pages/Campaigns";
@@ -33,7 +34,13 @@ const App = () => (
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/ir" element={<Redirect />} />
-                <Route path="/shared/:token" element={<SharedView />} />
+                
+                {/* Rota pública para links compartilhados */}
+                <Route path="/shared/:token" element={
+                  <PublicRoute>
+                    <SharedView />
+                  </PublicRoute>
+                } />
                 
                 <Route path="/dashboard" element={
                   <ProtectedRoute>
