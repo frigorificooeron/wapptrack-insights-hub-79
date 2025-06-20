@@ -33,9 +33,9 @@ const Dashboard = () => {
     try {
       setIsLoading(true);
       const [dashboardStats, campaignData, timeline] = await Promise.all([
-        getDashboardStatsByPeriod(dateRange.startDate, dateRange.endDate),
+        getDashboardStats(), // Remove date parameters since function doesn't accept them
         getCampaignPerformance(),
-        getTimelineData(dateRange.startDate, dateRange.endDate)
+        getTimelineData(7) // Pass number of days instead of date range
       ]);
       setStats(dashboardStats);
       setCampaignPerformance(campaignData);

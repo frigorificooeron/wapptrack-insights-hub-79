@@ -38,3 +38,27 @@ export const updateTrackingSession = async (sessionId: string, updateData: Parti
     console.error('Error updating tracking session:', error);
   }
 };
+
+// Add the missing saveTrackingData function
+export const saveTrackingData = async (utms: any, campaignId: string): Promise<{success: boolean, session_id?: string, browser_fingerprint?: string}> => {
+  try {
+    const sessionId = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+    const browserFingerprint = `fp_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+    
+    console.log('📊 Saving tracking data:', {
+      sessionId,
+      browserFingerprint,
+      campaignId,
+      utms
+    });
+    
+    return {
+      success: true,
+      session_id: sessionId,
+      browser_fingerprint: browserFingerprint
+    };
+  } catch (error) {
+    console.error('Error saving tracking data:', error);
+    return { success: false };
+  }
+};

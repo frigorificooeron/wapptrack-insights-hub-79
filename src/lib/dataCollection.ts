@@ -424,9 +424,10 @@ export const captureAndSaveDeviceData = async (phone?: string) => {
       getFacebookCampaignId() ? `campaign_id=${getFacebookCampaignId()}` : '',
     ].filter(Boolean).join(', ');
 
-    // Montar objeto completo para salvar
+    // Montar objeto completo para salvar - ADD TIMESTAMP HERE
     const completeDeviceData = {
       phone,
+      timestamp: new Date().toISOString(), // Add required timestamp
       ip_address: 'Detectando...', // Será obtido via API externa
       user_agent: deviceData.userAgent,
       browser: deviceData.browserName,
