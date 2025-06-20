@@ -23,7 +23,6 @@ export {
 
 export {
   getDashboardStats,
-  getDashboardStatsByPeriod,
   getCampaignPerformance,
   getMonthlyStats,
   getTimelineData

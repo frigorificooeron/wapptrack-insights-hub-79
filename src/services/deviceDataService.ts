@@ -7,13 +7,18 @@ export interface DeviceDataCapture {
   browser?: string;
   os?: string;
   device_type?: string;
+  device_model?: string;
   screen_resolution?: string;
   timezone?: string;
   language?: string;
   country?: string;
   city?: string;
+  location?: string;
   phone?: string;
   timestamp: string;
+  facebook_ad_id?: string;
+  facebook_adset_id?: string;
+  facebook_campaign_id?: string;
 }
 
 // Função para detectar informações do dispositivo
@@ -46,9 +51,16 @@ export const captureDeviceData = async (phone?: string): Promise<DeviceDataCaptu
       else if (userAgent.includes('edg')) deviceData.browser = 'Edge';
       
       // Detectar tipo de dispositivo
-      if (/tablet|ipad/i.test(userAgent)) deviceData.device_type = 'Tablet';
-      else if (/mobile|android|iphone/i.test(userAgent)) deviceData.device_type = 'Mobile';
-      else deviceData.device_type = 'Desktop';
+      if (/tablet|ipad/i.test(userAgent)) {
+        deviceData.device_type = 'Tablet';
+        deviceData.device_model = 'tablet';
+      } else if (/mobile|android|iphone/i.test(userAgent)) {
+        deviceData.device_type = 'Mobile';
+        deviceData.device_model = 'mobile';
+      } else {
+        deviceData.device_type = 'Desktop';
+        deviceData.device_model = 'desktop';
+      }
     }
 
     // Capturar resolução da tela
@@ -63,16 +75,22 @@ export const captureDeviceData = async (phone?: string): Promise<DeviceDataCaptu
 
     // Tentar capturar IP e localização via API externa (opcional)
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
       const response = await fetch('https://ipapi.co/json/', { 
         method: 'GET',
-        timeout: 5000 
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       
       if (response.ok) {
         const locationData = await response.json();
         deviceData.ip_address = locationData.ip;
         deviceData.country = locationData.country_name;
         deviceData.city = locationData.city;
+        deviceData.location = `${locationData.city || 'Unknown'}, ${locationData.country_name || 'Unknown'}`;
       }
     } catch (error) {
       console.log('⚠️ Não foi possível capturar dados de localização:', error);
@@ -121,11 +139,16 @@ export const saveDeviceData = async (deviceData: DeviceDataCapture): Promise<voi
           browser: deviceData.browser,
           os: deviceData.os,
           device_type: deviceData.device_type,
+          device_model: deviceData.device_model,
           screen_resolution: deviceData.screen_resolution,
           timezone: deviceData.timezone,
           language: deviceData.language,
           country: deviceData.country,
           city: deviceData.city,
+          location: deviceData.location,
+          facebook_ad_id: deviceData.facebook_ad_id,
+          facebook_adset_id: deviceData.facebook_adset_id,
+          facebook_campaign_id: deviceData.facebook_campaign_id,
           updated_at: new Date().toISOString()
         })
         .eq('id', existingLead.id);
@@ -151,7 +174,7 @@ export const getDeviceDataByPhone = async (phone: string): Promise<DeviceDataCap
   try {
     const { data: lead, error } = await supabase
       .from('leads')
-      .select('ip_address, browser, os, device_type, screen_resolution, timezone, language, country, city, phone, created_at')
+      .select('ip_address, browser, os, device_type, device_model, screen_resolution, timezone, language, country, city, location, phone, created_at, facebook_ad_id, facebook_adset_id, facebook_campaign_id')
       .eq('phone', phone)
       .single();
 
@@ -167,13 +190,18 @@ export const getDeviceDataByPhone = async (phone: string): Promise<DeviceDataCap
       browser: lead.browser,
       os: lead.os,
       device_type: lead.device_type,
+      device_model: lead.device_model,
       screen_resolution: lead.screen_resolution,
       timezone: lead.timezone,
       language: lead.language,
       country: lead.country,
       city: lead.city,
+      location: lead.location,
       phone: lead.phone,
-      timestamp: lead.created_at
+      timestamp: lead.created_at,
+      facebook_ad_id: lead.facebook_ad_id,
+      facebook_adset_id: lead.facebook_adset_id,
+      facebook_campaign_id: lead.facebook_campaign_id
     };
     
   } catch (error) {

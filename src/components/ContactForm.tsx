@@ -106,7 +106,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSubmit, loading }) => {
           {/* Debug: mostrar dados capturados */}
           {deviceData && (
             <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
-              📱 Dados capturados: {deviceData.device_type} • {deviceData.browser} • {deviceData.location}
+              📱 Dados capturados: {deviceData.device_type} • {deviceData.browser} • {deviceData.location || 'Localização não disponível'}
             </div>
           )}
         </CardContent>
