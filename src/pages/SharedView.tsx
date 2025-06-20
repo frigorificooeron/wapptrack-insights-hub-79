@@ -1,54 +1,50 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { useSharedLinks } from '@/hooks/useSharedLinks';
+import { SharedAccessProvider, useSharedAccess } from '@/context/SharedAccessContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Eye, EyeOff, Lock, Share2 } from 'lucide-react';
+import { Eye, EyeOff, Lock, Share2, Edit } from 'lucide-react';
 import Dashboard from './Dashboard';
 import Leads from './Leads';
 import Campaigns from './Campaigns';
 import Sales from './Sales';
 
-const SharedView = () => {
-  const { token } = useParams<{ token: string }>();
-  const { getSharedLinkByToken } = useSharedLinks();
-  const [sharedLink, setSharedLink] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+const MODULES = [
+  { key: 'dashboard', name: 'Dashboard', component: Dashboard },
+  { key: 'leads', name: 'Leads', component: Leads },
+  { key: 'campaigns', name: 'Campanhas', component: Campaigns },
+  { key: 'sales', name: 'Vendas', component: Sales }
+];
+
+const SharedViewContent: React.FC = () => {
+  const { isSharedMode, permissions, tokenInfo, loading, error, hasPermission } = useSharedAccess();
   const [activeModule, setActiveModule] = useState<string>('');
 
   useEffect(() => {
-    const loadSharedLink = async () => {
-      if (!token) {
-        setLoading(false);
-        return;
+    if (permissions && !loading) {
+      // Find the first module with view permission
+      const firstViewableModule = MODULES.find(module => 
+        hasPermission(module.key, 'view')
+      );
+      if (firstViewableModule) {
+        setActiveModule(firstViewableModule.key);
       }
-
-      const link = await getSharedLinkByToken(token);
-      setSharedLink(link);
-      
-      // Definir o primeiro módulo com permissão de leitura como ativo
-      if (link?.permissions) {
-        const firstReadableModule = Object.entries(link.permissions as any)
-          .find(([_, perms]: [string, any]) => perms.read)?.[0];
-        setActiveModule(firstReadableModule || '');
-      }
-      
-      setLoading(false);
-    };
-
-    loadSharedLink();
-  }, [token, getSharedLinkByToken]);
+    }
+  }, [permissions, loading, hasPermission]);
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Validando acesso...</p>
+        </div>
       </div>
     );
   }
 
-  if (!sharedLink) {
+  if (error || !isSharedMode || !permissions || !tokenInfo) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Card className="max-w-md mx-auto">
@@ -58,7 +54,7 @@ const SharedView = () => {
             </div>
             <CardTitle>Acesso Negado</CardTitle>
             <CardDescription>
-              Este link compartilhado não existe, expirou ou foi desativado.
+              {error || 'Este link compartilhado não existe, expirou ou foi desativado.'}
             </CardDescription>
           </CardHeader>
         </Card>
@@ -66,23 +62,8 @@ const SharedView = () => {
     );
   }
 
-  const hasReadPermission = (module: string) => {
-    return sharedLink.permissions?.[module]?.read || false;
-  };
-
-  const hasWritePermission = (module: string) => {
-    return sharedLink.permissions?.[module]?.write || false;
-  };
-
   const getAvailableModules = () => {
-    const modules = [
-      { key: 'dashboard', name: 'Dashboard', component: Dashboard },
-      { key: 'leads', name: 'Leads', component: Leads },
-      { key: 'campaigns', name: 'Links de rastreamento', component: Campaigns },
-      { key: 'sales', name: 'Vendas', component: Sales }
-    ];
-
-    return modules.filter(module => hasReadPermission(module.key));
+    return MODULES.filter(module => hasPermission(module.key, 'view'));
   };
 
   const availableModules = getAvailableModules();
@@ -97,16 +78,21 @@ const SharedView = () => {
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <Share2 className="h-6 w-6 text-primary" />
-                <h1 className="text-xl font-bold">{sharedLink.name}</h1>
+                <h1 className="text-xl font-bold">{tokenInfo.name}</h1>
               </div>
               <Badge variant="secondary">Acesso Público</Badge>
             </div>
             <div className="text-sm text-muted-foreground">
-              {sharedLink.expires_at && (
-                <span>Válido até: {new Date(sharedLink.expires_at).toLocaleDateString('pt-BR')}</span>
+              {tokenInfo.expires_at && (
+                <span>Válido até: {new Date(tokenInfo.expires_at).toLocaleDateString('pt-BR')}</span>
               )}
             </div>
           </div>
+          {tokenInfo.description && (
+            <div className="mt-2">
+              <p className="text-sm text-muted-foreground">{tokenInfo.description}</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -127,8 +113,9 @@ const SharedView = () => {
                 >
                   <Eye className="h-4 w-4" />
                   {module.name}
-                  {hasWritePermission(module.key) && (
+                  {hasPermission(module.key, 'edit') && (
                     <Badge variant="outline" className="text-xs">
+                      <Edit className="h-3 w-3 mr-1" />
                       Edição
                     </Badge>
                   )}
@@ -154,11 +141,7 @@ const SharedView = () => {
             </CardHeader>
           </Card>
         ) : ActiveComponent ? (
-          <div className="shared-view" data-shared-link={JSON.stringify({
-            token: sharedLink.token,
-            permissions: sharedLink.permissions,
-            readOnly: !hasWritePermission(activeModule)
-          })}>
+          <div className="shared-view">
             <ActiveComponent />
           </div>
         ) : (
@@ -173,6 +156,16 @@ const SharedView = () => {
         )}
       </main>
     </div>
+  );
+};
+
+const SharedView: React.FC = () => {
+  const { token } = useParams<{ token: string }>();
+
+  return (
+    <SharedAccessProvider token={token}>
+      <SharedViewContent />
+    </SharedAccessProvider>
   );
 };
 

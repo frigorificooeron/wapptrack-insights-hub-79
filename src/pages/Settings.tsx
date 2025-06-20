@@ -7,7 +7,9 @@ import ThemeSettings from '@/components/settings/ThemeSettings';
 import EvolutionApiSettings from '@/components/settings/EvolutionApiSettings';
 import InstancesSettings from '@/components/settings/InstancesSettings';
 import SharedLinksSettings from '@/components/settings/SharedLinksSettings';
+import { SharedAccessManager } from '@/components/SharedAccessManager';
 import { useSettings } from '@/hooks/useSettings';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Settings = () => {
   const {
@@ -35,41 +37,54 @@ const Settings = () => {
           </p>
         </div>
 
-        <div className="grid gap-6">
-          <CompanySettings
-            formData={formData}
-            uploading={uploading}
-            onInputChange={handleInputChange}
-            onFileUpload={handleFileUpload}
-          />
+        <Tabs defaultValue="general" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="general">Configurações Gerais</TabsTrigger>
+            <TabsTrigger value="shared-access">Acesso Compartilhado</TabsTrigger>
+          </TabsList>
 
-          <ThemeSettings
-            theme={formData.theme}
-            onThemeChange={handleThemeChange}
-          />
+          <TabsContent value="general" className="space-y-6">
+            <div className="grid gap-6">
+              <CompanySettings
+                formData={formData}
+                uploading={uploading}
+                onInputChange={handleInputChange}
+                onFileUpload={handleFileUpload}
+              />
 
-          <EvolutionApiSettings
-            evolutionConfig={evolutionConfig}
-            testingWebhook={testingEvolution}
-            onEvolutionConfigChange={handleEvolutionConfigChange}
-            onSaveEvolutionConfig={saveEvolutionConfig}
-            onTestWebhookConnection={testEvolutionConnection}
-          />
+              <ThemeSettings
+                theme={formData.theme}
+                onThemeChange={handleThemeChange}
+              />
 
-          <InstancesSettings />
+              <EvolutionApiSettings
+                evolutionConfig={evolutionConfig}
+                testingWebhook={testingEvolution}
+                onEvolutionConfigChange={handleEvolutionConfigChange}
+                onSaveEvolutionConfig={saveEvolutionConfig}
+                onTestWebhookConnection={testEvolutionConnection}
+              />
 
-          <SharedLinksSettings />
+              <InstancesSettings />
 
-          <div className="flex justify-end">
-            <Button 
-              onClick={handleSave} 
-              disabled={loading}
-              className="min-w-[120px]"
-            >
-              {loading ? 'Salvando...' : 'Salvar Alterações'}
-            </Button>
-          </div>
-        </div>
+              <SharedLinksSettings />
+
+              <div className="flex justify-end">
+                <Button 
+                  onClick={handleSave} 
+                  disabled={loading}
+                  className="min-w-[120px]"
+                >
+                  {loading ? 'Salvando...' : 'Salvar Alterações'}
+                </Button>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="shared-access">
+            <SharedAccessManager />
+          </TabsContent>
+        </Tabs>
       </div>
     </MainLayout>
   );
