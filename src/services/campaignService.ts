@@ -59,6 +59,8 @@ export const addCampaign = async (
         whatsapp_number: campaign.whatsapp_number,
         event_type: campaign.event_type,
         custom_message: campaign.custom_message,
+        company_title: campaign.company_title,
+        company_subtitle: campaign.company_subtitle,
         redirect_type: campaign.redirect_type,
         utm_source: campaign.utm_source,
         utm_medium: campaign.utm_medium,
@@ -135,6 +137,8 @@ export const updateCampaign = async (
       updateData.whatsapp_number = campaign.whatsapp_number;
     if (campaign.event_type !== undefined) updateData.event_type = campaign.event_type;
     if (campaign.custom_message !== undefined) updateData.custom_message = campaign.custom_message;
+    if (campaign.company_title !== undefined) updateData.company_title = campaign.company_title;
+    if (campaign.company_subtitle !== undefined) updateData.company_subtitle = campaign.company_subtitle;
     if (campaign.redirect_type !== undefined)
       updateData.redirect_type = campaign.redirect_type;
     if (campaign.utm_source !== undefined)
@@ -229,5 +233,3 @@ export const deleteCampaign = async (id: string): Promise<void> => {
     throw error;
   }
 };
-
-
