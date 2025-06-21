@@ -34,10 +34,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Only show toast and navigate if it's a new sign-in, not a session restoration
         if (event === 'SIGNED_IN' && session) {
-          if (!initialLoadRef.current) { // Only show toast if not initial load
-            toast.success('Login realizado com sucesso!');
-            navigate('/dashboard');
-          }
+          // This block is intentionally left empty. The toast and navigation are handled in the login function.
         } else if (event === 'SIGNED_OUT') {
           toast.info('Você saiu do sistema');
           navigate('/login');
