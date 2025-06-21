@@ -1,11 +1,9 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface QRCodeResponse {
   success: boolean;
-  qrcode?: string;
+  qrcode?: string; // Agora este campo conterá a string base64 completa (com prefixo data:image/png;base64,)
   pairingCode?: string;
-  code?: string;
   error?: string;
 }
 
@@ -32,3 +30,5 @@ export const evolutionService = {
     }
   }
 };
+
+
