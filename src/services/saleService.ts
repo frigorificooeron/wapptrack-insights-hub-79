@@ -11,6 +11,7 @@ export const getSales = async (): Promise<Sale[]> => {
 
     if (error) throw error;
 
+    // Fix: Properly cast status to the expected literal type
     return (sales || []).map(sale => ({
       id: sale.id,
       value: sale.amount || 0,
@@ -20,7 +21,7 @@ export const getSales = async (): Promise<Sale[]> => {
       product: '',
       notes: sale.notes || '',
       lead_id: sale.lead_id || '',
-      status: sale.status || 'confirmed',
+      status: (sale.status as 'confirmed' | 'pending' | 'cancelled') || 'confirmed',
       created_at: sale.created_at,
       updated_at: sale.updated_at
     }));
@@ -56,7 +57,7 @@ export const addSale = async (sale: Omit<Sale, 'id' | 'created_at' | 'updated_at
       product: sale.product || '',
       notes: data.notes,
       lead_id: data.lead_id,
-      status: data.status,
+      status: (data.status as 'confirmed' | 'pending' | 'cancelled') || 'confirmed',
       created_at: data.created_at,
       updated_at: data.updated_at
     };
@@ -94,7 +95,7 @@ export const updateSale = async (id: string, sale: Partial<Sale>): Promise<Sale>
       product: sale.product || '',
       notes: data.notes,
       lead_id: data.lead_id,
-      status: data.status,
+      status: (data.status as 'confirmed' | 'pending' | 'cancelled') || 'confirmed',
       created_at: data.created_at,
       updated_at: data.updated_at
     };

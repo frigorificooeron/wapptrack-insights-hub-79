@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface DeviceData {
@@ -114,7 +113,13 @@ export const saveDeviceData = async (deviceData: DeviceDataCapture): Promise<boo
 
 export const collectDeviceData = async (params: CollectDeviceDataParams): Promise<boolean> => {
   try {
-    const deviceInfo = params.userAgent ? parseUserAgent(params.userAgent) : {};
+    // Fix: Provide default values when userAgent is undefined
+    const deviceInfo = params.userAgent ? parseUserAgent(params.userAgent) : {
+      browser: 'Unknown',
+      os: 'Unknown', 
+      deviceType: 'Unknown',
+      deviceModel: 'Unknown'
+    };
     
     // Store device data in the leads table
     const { error } = await supabase
