@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { MessageSquare, Wifi, WifiOff } from 'lucide-react';
+import { MessageSquare, Wifi, WifiOff, Loader2, RefreshCw } from 'lucide-react'; // Adicionado Loader2 e RefreshCw
 import QRCodeDisplay from '@/components/QRCodeDisplay';
 import { evolutionService } from '@/services/evolutionService';
 import { toast } from 'sonner';
