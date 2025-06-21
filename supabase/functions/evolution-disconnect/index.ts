@@ -38,7 +38,7 @@ serve(async (req) => {
     }
 
     const baseUrl = "https://evolutionapi.workidigital.tech";
-    const url = `${baseUrl}/instance/disconnect/${instanceId}`;
+    const url = `${baseUrl}/instance/logout/${instanceId}`;
     console.log(`Disconnecting instance: ${instanceId}`);
 
     const response = await fetch(url, {
