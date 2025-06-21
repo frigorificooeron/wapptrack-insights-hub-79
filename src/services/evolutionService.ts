@@ -13,6 +13,12 @@ export interface InstanceStatusResponse {
   error?: string;
 }
 
+export interface DisconnectResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
 export const evolutionService = {
   async getQRCode(instanceId: string): Promise<QRCodeResponse> {
     try {
@@ -56,7 +62,29 @@ export const evolutionService = {
         error: error.message || 'Failed to get instance status'
       };
     }
-  }
+  },
+
+  async disconnectInstance(instanceId: string): Promise<DisconnectResponse> {
+    try {
+      const { data, error } = await supabase.functions.invoke("evolution-disconnect", {
+        body: {
+          instanceId,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      return data;
+    } catch (error: any) {
+      console.error("Error disconnecting instance:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to disconnect instance",
+      };
+    }
+  },
 };
 
 

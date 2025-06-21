@@ -77,14 +77,18 @@ const EvolutionApiSettings = () => {
     setIsDisconnecting(true);
     
     try {
-      // Aqui você implementaria a lógica para desconectar da instância
-      // Por enquanto, apenas simulamos a desconexão
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setIsConnected(false);
-      setQrCode('');
-      setQrError('');
-      toast.success('Desconectado com sucesso!');
+      const response = await evolutionService.disconnectInstance(
+        EVOLUTION_CONFIG.instance_name
+      );
+
+      if (response.success) {
+        setIsConnected(false);
+        setQrCode("");
+        setQrError("");
+        toast.success("Desconectado com sucesso!");
+      } else {
+        toast.error("Erro ao desconectar: " + (response.error || "Erro desconhecido"));
+      }
     } catch (error: any) {
       toast.error('Erro ao desconectar: ' + error.message);
     } finally {
