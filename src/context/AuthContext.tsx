@@ -1,5 +1,4 @@
-
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -24,31 +23,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const initialLoadRef = useRef(true); // Flag to track initial load
 
   useEffect(() => {
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('🔐 Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
-        setLoading(false);
         
+        // Only show toast and navigate if it's a new sign-in, not a session restoration
         if (event === 'SIGNED_IN' && session) {
-          toast.success('Login realizado com sucesso!');
-          navigate('/dashboard');
+          if (!initialLoadRef.current) { // Only show toast if not initial load
+            toast.success('Login realizado com sucesso!');
+            navigate('/dashboard');
+          }
         } else if (event === 'SIGNED_OUT') {
           toast.info('Você saiu do sistema');
           navigate('/login');
         }
+        initialLoadRef.current = false; // After first event, set to false
+        setLoading(false);
       }
     );
 
-    // THEN check for existing session
+    // Check for existing session on initial load
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      initialLoadRef.current = false; // Ensure this is set after initial session check
     });
 
     return () => subscription.unsubscribe();
@@ -124,13 +128,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       setLoading(true);
-      const redirectUrl = `${window.location.origin}/`;
       
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: redirectUrl
+          emailRedirectTo: `${window.location.origin}/login` // Redireciona para a página de login
         }
       });
       
@@ -171,3 +174,5 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     </AuthContext.Provider>
   );
 };
+
+

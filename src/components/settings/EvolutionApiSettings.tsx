@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageSquare, Wifi, WifiOff } from 'lucide-react';
@@ -13,12 +12,36 @@ const EvolutionApiSettings = () => {
   const [qrError, setQrError] = useState<string>('');
   const [isConnected, setIsConnected] = useState(false);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const [isLoadingStatus, setIsLoadingStatus] = useState(true);
 
   // Configurações fixas internas - não editáveis pelo usuário
   const EVOLUTION_CONFIG = {
     instance_name: 'Herickson',
     base_url: 'https://evolutionapi.workidigital.tech'
   };
+
+  const fetchInstanceStatus = async () => {
+    setIsLoadingStatus(true);
+    try {
+      const response = await evolutionService.getInstanceStatus(
+        EVOLUTION_CONFIG.instance_name
+      );
+      if (response.success && response.status === 'open') {
+        setIsConnected(true);
+      } else {
+        setIsConnected(false);
+      }
+    } catch (error: any) {
+      console.error('Erro ao buscar status da instância:', error);
+      setIsConnected(false);
+    } finally {
+      setIsLoadingStatus(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInstanceStatus();
+  }, []);
 
   const handleGetQRCode = async () => {
     setIsLoadingQR(true);
@@ -31,7 +54,7 @@ const EvolutionApiSettings = () => {
       );
 
       if (response.success) {
-        const qrCodeData = response.qrcode || response.code;
+        const qrCodeData = response.qrcode;
         if (qrCodeData) {
           setQrCode(qrCodeData);
           setIsConnected(true);
@@ -46,6 +69,7 @@ const EvolutionApiSettings = () => {
       setQrError(error.message || 'Erro ao gerar QR Code');
     } finally {
       setIsLoadingQR(false);
+      fetchInstanceStatus(); // Atualiza o status após tentar gerar QR
     }
   };
 
@@ -65,6 +89,7 @@ const EvolutionApiSettings = () => {
       toast.error('Erro ao desconectar: ' + error.message);
     } finally {
       setIsDisconnecting(false);
+      fetchInstanceStatus(); // Atualiza o status após tentar desconectar
     }
   };
 
@@ -82,7 +107,9 @@ const EvolutionApiSettings = () => {
       <CardContent className="space-y-6">
         <div className="flex items-center justify-between p-4 border rounded-lg">
           <div className="flex items-center space-x-3">
-            {isConnected ? (
+            {isLoadingStatus ? (
+              <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+            ) : isConnected ? (
               <Wifi className="w-5 h-5 text-green-500" />
             ) : (
               <WifiOff className="w-5 h-5 text-gray-400" />
@@ -92,7 +119,7 @@ const EvolutionApiSettings = () => {
                 Status da Conexão
               </p>
               <p className="text-sm text-muted-foreground">
-                {isConnected ? 'Conectado ao WhatsApp' : 'Desconectado'}
+                {isLoadingStatus ? 'Carregando...' : isConnected ? 'Conectado ao WhatsApp' : 'Desconectado'}
               </p>
             </div>
           </div>
@@ -101,7 +128,7 @@ const EvolutionApiSettings = () => {
             {!isConnected ? (
               <Button 
                 onClick={handleGetQRCode} 
-                disabled={isLoadingQR}
+                disabled={isLoadingQR || isLoadingStatus}
                 className="flex items-center space-x-2"
               >
                 <MessageSquare className="w-4 h-4" />
@@ -110,7 +137,7 @@ const EvolutionApiSettings = () => {
             ) : (
               <Button 
                 onClick={handleDisconnect} 
-                disabled={isDisconnecting}
+                disabled={isDisconnecting || isLoadingStatus}
                 variant="destructive"
                 className="flex items-center space-x-2"
               >
@@ -146,3 +173,5 @@ const EvolutionApiSettings = () => {
 };
 
 export default EvolutionApiSettings;
+
+
