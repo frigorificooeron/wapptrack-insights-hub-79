@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,10 +18,20 @@ export const useSettings = () => {
   });
 
   const loadSettings = async () => {
+    setLoading(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        console.error('User not authenticated.');
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('company_settings')
         .select('*')
+        .eq('user_id', user.id) // Filter by user_id
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -57,6 +66,8 @@ export const useSettings = () => {
       }
     } catch (error) {
       console.error('Error loading settings:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -77,9 +88,8 @@ export const useSettings = () => {
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    setUploading(true);
     try {
-      setUploading(true);
-      
       if (!event.target.files || event.target.files.length === 0) {
         throw new Error('Você deve selecionar uma imagem para upload.');
       }
@@ -125,15 +135,24 @@ export const useSettings = () => {
   };
 
   const handleSave = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        toast.error('Usuário não autenticado. Faça login novamente.');
+        setLoading(false);
+        return;
+      }
 
       if (!formData.company_name.trim()) {
         toast.error('O nome da empresa é obrigatório');
+        setLoading(false);
         return;
       }
 
       const updateData = {
+        user_id: user.id, // Adiciona o user_id
         company_name: formData.company_name.trim(),
         company_subtitle: formData.company_subtitle.trim(),
         logo_url: formData.logo_url,
@@ -144,7 +163,7 @@ export const useSettings = () => {
       const { data, error } = await supabase
         .from('company_settings')
         .upsert([updateData], {
-          onConflict: 'user_id',
+          onConflict: 'user_id', // Conflito na coluna user_id
           ignoreDuplicates: false
         })
         .select();
@@ -182,3 +201,5 @@ export const useSettings = () => {
     handleSave
   };
 };
+
+
