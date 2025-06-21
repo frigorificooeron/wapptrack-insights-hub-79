@@ -55,6 +55,10 @@ serve(async (req)=>{
     let qrcodeData = '';
     if (data.base64) {
       qrcodeData = data.base64;
+      // Remove o prefixo 'data:image/png;base64,' se existir
+      if (qrcodeData.startsWith('data:image/png;base64,')) {
+        qrcodeData = qrcodeData.substring('data:image/png;base64,'.length);
+      }
     } else if (data.qrcode) {
       qrcodeData = data.qrcode;
     } else if (data.code) {
