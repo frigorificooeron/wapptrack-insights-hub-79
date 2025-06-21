@@ -1,10 +1,13 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MessageSquare } from 'lucide-react';
+import QRCodeDisplay from '@/components/QRCodeDisplay';
+import { evolutionService } from '@/services/evolutionService';
+import { toast } from 'sonner';
 
 interface EvolutionApiConfig {
   evolution_api_key: string;
@@ -29,6 +32,44 @@ const EvolutionApiSettings = ({
   onSaveEvolutionConfig,
   onTestWebhookConnection
 }: EvolutionApiSettingsProps) => {
+  const [qrCode, setQrCode] = useState<string>('');
+  const [isLoadingQR, setIsLoadingQR] = useState(false);
+  const [qrError, setQrError] = useState<string>('');
+
+  const handleGetQRCode = async () => {
+    if (!evolutionConfig.evolution_instance_name || !evolutionConfig.evolution_api_key) {
+      toast.error('Por favor, configure o nome da instância e a API key primeiro');
+      return;
+    }
+
+    setIsLoadingQR(true);
+    setQrError('');
+    setQrCode('');
+
+    try {
+      const response = await evolutionService.getQRCode(
+        evolutionConfig.evolution_instance_name,
+        evolutionConfig.evolution_api_key
+      );
+
+      if (response.success) {
+        const qrCodeData = response.qrcode || response.code;
+        if (qrCodeData) {
+          setQrCode(qrCodeData);
+          toast.success('QR Code gerado com sucesso!');
+        } else {
+          setQrError('QR Code não encontrado na resposta da API');
+        }
+      } else {
+        setQrError(response.error || 'Erro desconhecido');
+      }
+    } catch (error: any) {
+      setQrError(error.message || 'Erro ao gerar QR Code');
+    } finally {
+      setIsLoadingQR(false);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -49,7 +90,7 @@ const EvolutionApiSettings = ({
               name="evolution_base_url" 
               value={evolutionConfig.evolution_base_url} 
               onChange={onEvolutionConfigChange} 
-              placeholder="https://api.evolution.com" 
+              placeholder="https://evolutionapi.workidigital.tech" 
               type="url" 
             />
             <p className="text-xs text-muted-foreground">
@@ -94,7 +135,7 @@ const EvolutionApiSettings = ({
             name="webhook_callback_url" 
             value={evolutionConfig.webhook_callback_url} 
             onChange={onEvolutionConfigChange} 
-            placeholder="https://gbrpboxxhlwmenrajdji.supabase.co/functions/v1/evolution-webhook" 
+            placeholder="https://bwicygxyhkdgrypqrijo.supabase.co/functions/v1/evolution-webhook" 
             type="url" 
             readOnly 
           />
@@ -107,7 +148,19 @@ const EvolutionApiSettings = ({
           <Button onClick={onSaveEvolutionConfig} variant="outline">
             Salvar Configuração
           </Button>
+          <Button onClick={handleGetQRCode} disabled={isLoadingQR}>
+            {isLoadingQR ? 'Gerando...' : 'Gerar QR Code'}
+          </Button>
         </div>
+
+        {(qrCode || isLoadingQR || qrError) && (
+          <QRCodeDisplay
+            qrCode={qrCode}
+            isLoading={isLoadingQR}
+            error={qrError}
+            onRefresh={handleGetQRCode}
+          />
+        )}
       </CardContent>
     </Card>
   );

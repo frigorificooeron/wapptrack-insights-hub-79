@@ -21,14 +21,13 @@ export const useSettings = () => {
   const [evolutionConfig, setEvolutionConfig] = useState({
     evolution_api_key: '',
     evolution_instance_name: '',
-    evolution_base_url: '',
-    webhook_callback_url: 'https://gbrpboxxhlwmenrajdji.supabase.co/functions/v1/evolution-webhook',
+    evolution_base_url: 'https://evolutionapi.workidigital.tech',
+    webhook_callback_url: 'https://bwicygxyhkdgrypqrijo.supabase.co/functions/v1/evolution-webhook',
     webhook_url: ''
   });
 
   const loadSettings = async () => {
     try {
-      // Usar order by e limit para pegar apenas a primeira configuração
       const { data, error } = await supabase
         .from('company_settings')
         .select('*')
@@ -53,7 +52,6 @@ export const useSettings = () => {
           theme: (data.theme as Theme) || 'system'
         });
         
-        // Apply saved theme
         if (data.theme) {
           setTheme(data.theme as Theme);
         }
@@ -237,7 +235,6 @@ export const useSettings = () => {
         updated_at: new Date().toISOString()
       };
 
-      // Usar upsert (INSERT ... ON CONFLICT DO UPDATE) para evitar problemas de constraint
       const { data, error } = await supabase
         .from('company_settings')
         .upsert([updateData], {

@@ -1,4 +1,3 @@
-
 import { Sale } from "../types";
 import { supabase } from "../integrations/supabase/client";
 
@@ -7,19 +6,20 @@ export const getSales = async (): Promise<Sale[]> => {
     const { data: sales, error } = await supabase
       .from('sales')
       .select('*')
-      .order('date', { ascending: false });
+      .order('sale_date', { ascending: false });
 
     if (error) throw error;
 
     return (sales || []).map(sale => ({
       id: sale.id,
-      value: sale.value,
-      date: sale.date,
-      lead_id: sale.lead_id,
-      lead_name: sale.lead_name,
-      campaign: sale.campaign,
-      product: sale.product,
-      notes: sale.notes
+      amount: sale.amount || 0,
+      sale_date: sale.sale_date || sale.created_at,
+      status: sale.status || 'confirmed',
+      notes: sale.notes || '',
+      lead_id: sale.lead_id || '',
+      campaign_id: sale.campaign_id || '',
+      created_at: sale.created_at,
+      updated_at: sale.updated_at
     }));
   } catch (error) {
     console.error("Error fetching sales:", error);
@@ -27,18 +27,17 @@ export const getSales = async (): Promise<Sale[]> => {
   }
 };
 
-export const addSale = async (sale: Omit<Sale, 'id'>): Promise<Sale> => {
+export const addSale = async (sale: Omit<Sale, 'id' | 'created_at' | 'updated_at'>): Promise<Sale> => {
   try {
     const { data, error } = await supabase
       .from('sales')
       .insert({
-        value: sale.value,
-        date: sale.date,
+        amount: sale.amount,
+        sale_date: sale.sale_date,
+        status: sale.status,
+        notes: sale.notes,
         lead_id: sale.lead_id,
-        lead_name: sale.lead_name,
-        campaign: sale.campaign,
-        product: sale.product,
-        notes: sale.notes
+        campaign_id: sale.campaign_id
       })
       .select()
       .single();
@@ -47,13 +46,14 @@ export const addSale = async (sale: Omit<Sale, 'id'>): Promise<Sale> => {
 
     return {
       id: data.id,
-      value: data.value,
-      date: data.date,
+      amount: data.amount,
+      sale_date: data.sale_date,
+      status: data.status,
+      notes: data.notes,
       lead_id: data.lead_id,
-      lead_name: data.lead_name,
-      campaign: data.campaign,
-      product: data.product,
-      notes: data.notes
+      campaign_id: data.campaign_id,
+      created_at: data.created_at,
+      updated_at: data.updated_at
     };
   } catch (error) {
     console.error("Error adding sale:", error);
@@ -64,13 +64,12 @@ export const addSale = async (sale: Omit<Sale, 'id'>): Promise<Sale> => {
 export const updateSale = async (id: string, sale: Partial<Sale>): Promise<Sale> => {
   try {
     const updateData: any = {};
-    if (sale.value !== undefined) updateData.value = sale.value;
-    if (sale.date) updateData.date = sale.date;
-    if (sale.lead_id) updateData.lead_id = sale.lead_id;
-    if (sale.lead_name) updateData.lead_name = sale.lead_name;
-    if (sale.campaign) updateData.campaign = sale.campaign;
-    if (sale.product !== undefined) updateData.product = sale.product;
+    if (sale.amount !== undefined) updateData.amount = sale.amount;
+    if (sale.sale_date !== undefined) updateData.sale_date = sale.sale_date;
+    if (sale.status !== undefined) updateData.status = sale.status;
     if (sale.notes !== undefined) updateData.notes = sale.notes;
+    if (sale.lead_id !== undefined) updateData.lead_id = sale.lead_id;
+    if (sale.campaign_id !== undefined) updateData.campaign_id = sale.campaign_id;
 
     const { data, error } = await supabase
       .from('sales')
@@ -83,13 +82,14 @@ export const updateSale = async (id: string, sale: Partial<Sale>): Promise<Sale>
 
     return {
       id: data.id,
-      value: data.value,
-      date: data.date,
+      amount: data.amount,
+      sale_date: data.sale_date,
+      status: data.status,
+      notes: data.notes,
       lead_id: data.lead_id,
-      lead_name: data.lead_name,
-      campaign: data.campaign,
-      product: data.product,
-      notes: data.notes
+      campaign_id: data.campaign_id,
+      created_at: data.created_at,
+      updated_at: data.updated_at
     };
   } catch (error) {
     console.error("Error updating sale:", error);
