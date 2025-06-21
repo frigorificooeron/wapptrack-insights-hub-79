@@ -16,8 +16,8 @@ export const getCampaigns = async (): Promise<Campaign[]> => {
       pixel_id: campaign.pixel_id || "",
       facebook_access_token: campaign.facebook_access_token || "",
       whatsapp_number: campaign.whatsapp_number || "",
-      event_type: "lead" as const, // Default value since column doesn't exist
-      custom_message: "", // Default value since column doesn't exist
+      event_type: campaign.event_type || "lead",
+      custom_message: campaign.custom_message || "",
       redirect_type: (campaign.redirect_type as "whatsapp" | "form") || "whatsapp",
       utm_source: campaign.utm_source || "",
       utm_medium: campaign.utm_medium || "",
@@ -26,7 +26,7 @@ export const getCampaigns = async (): Promise<Campaign[]> => {
       utm_term: campaign.utm_term || "",
       active: campaign.active ?? true,
       created_at: campaign.created_at,
-      pixel_integration_type: "direct" as const,
+      pixel_integration_type: campaign.pixel_integration_type || "direct",
       conversion_keywords: campaign.conversion_keywords || [],
       cancellation_keywords: campaign.cancellation_keywords || [],
       conversion_api_enabled: campaign.conversion_api_enabled || false,
@@ -57,6 +57,8 @@ export const addCampaign = async (
         pixel_id: campaign.pixel_id,
         facebook_access_token: campaign.facebook_access_token,
         whatsapp_number: campaign.whatsapp_number,
+        event_type: campaign.event_type,
+        custom_message: campaign.custom_message,
         redirect_type: campaign.redirect_type,
         utm_source: campaign.utm_source,
         utm_medium: campaign.utm_medium,
@@ -64,6 +66,7 @@ export const addCampaign = async (
         utm_content: campaign.utm_content,
         utm_term: campaign.utm_term,
         active: campaign.active,
+        pixel_integration_type: campaign.pixel_integration_type,
         conversion_keywords: campaign.conversion_keywords,
         cancellation_keywords: campaign.cancellation_keywords,
         conversion_api_enabled: campaign.conversion_api_enabled,
@@ -88,8 +91,8 @@ export const addCampaign = async (
       pixel_id: data.pixel_id || "",
       facebook_access_token: data.facebook_access_token || "",
       whatsapp_number: data.whatsapp_number || "",
-      event_type: "lead" as const,
-      custom_message: "",
+      event_type: data.event_type || "lead",
+      custom_message: data.custom_message || "",
       redirect_type: (data.redirect_type as "whatsapp" | "form") || "whatsapp",
       utm_source: data.utm_source || "",
       utm_medium: data.utm_medium || "",
@@ -98,7 +101,7 @@ export const addCampaign = async (
       utm_term: data.utm_term || "",
       active: data.active ?? true,
       created_at: data.created_at,
-      pixel_integration_type: "direct" as const,
+      pixel_integration_type: data.pixel_integration_type || "direct",
       conversion_keywords: data.conversion_keywords || [],
       cancellation_keywords: data.cancellation_keywords || [],
       conversion_api_enabled: data.conversion_api_enabled || false,
@@ -130,6 +133,8 @@ export const updateCampaign = async (
       updateData.facebook_access_token = campaign.facebook_access_token;
     if (campaign.whatsapp_number !== undefined)
       updateData.whatsapp_number = campaign.whatsapp_number;
+    if (campaign.event_type !== undefined) updateData.event_type = campaign.event_type;
+    if (campaign.custom_message !== undefined) updateData.custom_message = campaign.custom_message;
     if (campaign.redirect_type !== undefined)
       updateData.redirect_type = campaign.redirect_type;
     if (campaign.utm_source !== undefined)
@@ -142,6 +147,8 @@ export const updateCampaign = async (
       updateData.utm_content = campaign.utm_content;
     if (campaign.utm_term !== undefined) updateData.utm_term = campaign.utm_term;
     if (campaign.active !== undefined) updateData.active = campaign.active;
+    if (campaign.pixel_integration_type !== undefined)
+      updateData.pixel_integration_type = campaign.pixel_integration_type;
     if (campaign.conversion_keywords !== undefined)
       updateData.conversion_keywords = campaign.conversion_keywords;
     if (campaign.cancellation_keywords !== undefined)
@@ -182,8 +189,8 @@ export const updateCampaign = async (
       pixel_id: data.pixel_id || "",
       facebook_access_token: data.facebook_access_token || "",
       whatsapp_number: data.whatsapp_number || "",
-      event_type: "lead" as const,
-      custom_message: "",
+      event_type: data.event_type || "lead",
+      custom_message: data.custom_message || "",
       redirect_type: (data.redirect_type as "whatsapp" | "form") || "whatsapp",
       utm_source: data.utm_source || "",
       utm_medium: data.utm_medium || "",
@@ -192,7 +199,7 @@ export const updateCampaign = async (
       utm_term: data.utm_term || "",
       active: data.active ?? true,
       created_at: data.created_at,
-      pixel_integration_type: "direct" as const,
+      pixel_integration_type: data.pixel_integration_type || "direct",
       conversion_keywords: data.conversion_keywords || [],
       cancellation_keywords: data.cancellation_keywords || [],
       conversion_api_enabled: data.conversion_api_enabled || false,
