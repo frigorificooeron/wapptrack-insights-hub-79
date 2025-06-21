@@ -37,7 +37,7 @@ serve(async (req) => {
     }
 
     const baseUrl = "https://evolutionapi.workidigital.tech";
-    const url = `${baseUrl}/instance/status/${instanceId}`;
+    const url = `${baseUrl}/instance/connectionState/${instanceId}`;
     console.log(`Getting status for instance: ${instanceId}`);
 
     const response = await fetch(url, {
