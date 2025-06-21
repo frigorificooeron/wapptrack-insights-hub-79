@@ -1,276 +1,233 @@
 
-import { supabase } from "../integrations/supabase/client";
+import { supabase } from '@/integrations/supabase/client';
 
-export interface AttributionData {
+interface AttributionData {
+  leadId: string;
+  campaignId?: string;
+  campaignName?: string;
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  utmContent?: string;
+  utmTerm?: string;
+  touchpoints?: TouchPoint[];
+  conversionValue?: number;
+  createdAt: string;
+}
+
+interface TouchPoint {
+  timestamp: string;
   source: string;
-  medium: string;
-  campaign: string;
-  leads_count: number;
-  conversion_rate: number;
-  avg_lead_score: number;
-  total_value: number;
-  cost_per_lead: number;
-  roi: number;
+  medium?: string;
+  campaign?: string;
+  content?: string;
+  term?: string;
 }
 
-export interface LeadSourceReport {
-  date: string;
-  instagram_leads: number;
-  facebook_leads: number;
-  other_leads: number;
-  instagram_conversions: number;
-  facebook_conversions: number;
-  other_conversions: number;
+interface AttributionReport {
+  campaignId: string;
+  campaignName: string;
+  totalLeads: number;
+  totalConversions: number;
+  totalRevenue: number;
+  conversionRate: number;
+  averageOrderValue: number;
+  topSources: { [key: string]: number };
+  topMediums: { [key: string]: number };
 }
 
-export interface CampaignPerformanceDetail {
-  campaign_id: string;
-  campaign_name: string;
-  utm_source: string;
-  utm_medium: string;
-  utm_campaign: string;
-  total_leads: number;
-  qualified_leads: number;
-  converted_leads: number;
-  lost_leads: number;
-  avg_lead_score: number;
-  conversion_rate: number;
-  qualification_rate: number;
-  total_investment?: number;
-  cost_per_lead?: number;
-  roi?: number;
-}
+export const trackAttribution = async (leadId: string, utmParams: {
+  source?: string;
+  medium?: string;
+  campaign?: string;
+  content?: string;
+  term?: string;
+}): Promise<boolean> => {
+  try {
+    // Update the lead with attribution data
+    const { error } = await supabase
+      .from('leads')
+      .update({
+        utm_source: utmParams.source,
+        utm_medium: utmParams.medium,
+        utm_campaign: utmParams.campaign,
+        utm_content: utmParams.content,
+        utm_term: utmParams.term
+      })
+      .eq('id', leadId);
 
-export const getAttributionReport = async (
+    if (error) {
+      console.error('Error tracking attribution:', error);
+      return false;
+    }
+
+    console.log('Attribution tracked successfully for lead:', leadId);
+    return true;
+  } catch (error) {
+    console.error('Error tracking attribution:', error);
+    return false;
+  }
+};
+
+export const getAttributionData = async (leadId: string): Promise<AttributionData | null> => {
+  try {
+    const { data: leadData, error: leadError } = await supabase
+      .from('leads')
+      .select('*')
+      .eq('id', leadId)
+      .single();
+
+    if (leadError || !leadData) {
+      console.error('Error fetching lead attribution data:', leadError);
+      return null;
+    }
+
+    return {
+      leadId: leadData.id,
+      campaignId: leadData.campaign_id,
+      campaignName: leadData.campaign,
+      utmSource: leadData.utm_source,
+      utmMedium: leadData.utm_medium,
+      utmCampaign: leadData.utm_campaign,
+      utmContent: leadData.utm_content,
+      utmTerm: leadData.utm_term,
+      createdAt: leadData.created_at
+    };
+  } catch (error) {
+    console.error('Error getting attribution data:', error);
+    return null;
+  }
+};
+
+export const generateAttributionReport = async (
   startDate?: string,
   endDate?: string
-): Promise<AttributionData[]> => {
+): Promise<AttributionReport[]> => {
   try {
-    let query = supabase
+    // Get leads with attribution data
+    let leadsQuery = supabase
       .from('leads')
-      .select(`
-        *,
-        campaigns!leads_campaign_id_fkey(
-          utm_source,
-          utm_medium,
-          utm_campaign,
-          name
-        )
-      `)
-      .order('created_at', { ascending: false });
-
+      .select('*');
+    
     if (startDate) {
-      query = query.gte('created_at', startDate);
+      leadsQuery = leadsQuery.gte('created_at', startDate);
     }
     if (endDate) {
-      query = query.lte('created_at', endDate);
+      leadsQuery = leadsQuery.lte('created_at', endDate);
     }
 
-    const { data: leads, error } = await query;
+    const { data: leads, error: leadsError } = await leadsQuery;
 
-    if (error) throw error;
+    if (leadsError) {
+      console.error('Error fetching leads for attribution report:', leadsError);
+      return [];
+    }
 
-    // Group by attribution data
-    const attributionMap = new Map<string, {
-      source: string;
-      medium: string;
-      campaign: string;
-      leads: any[];
-      conversions: number;
-      total_score: number;
-    }>();
+    // Get sales data
+    let salesQuery = supabase
+      .from('sales')
+      .select('*');
+    
+    if (startDate) {
+      salesQuery = salesQuery.gte('sale_date', startDate);
+    }
+    if (endDate) {
+      salesQuery = salesQuery.lte('sale_date', endDate);
+    }
 
-    leads?.forEach(lead => {
-      const campaign = lead.campaigns;
-      const source = campaign?.utm_source || 'direct';
-      const medium = campaign?.utm_medium || 'organic';
-      const campaignName = campaign?.utm_campaign || campaign?.name || 'unknown';
-      
-      const key = `${source}-${medium}-${campaignName}`;
-      
-      if (!attributionMap.has(key)) {
-        attributionMap.set(key, {
-          source,
-          medium,
-          campaign: campaignName,
-          leads: [],
-          conversions: 0,
-          total_score: 0
-        });
+    const { data: sales, error: salesError } = await salesQuery;
+
+    if (salesError) {
+      console.error('Error fetching sales for attribution report:', salesError);
+      return [];
+    }
+
+    // Group data by campaign
+    const campaignData: { [key: string]: AttributionReport } = {};
+
+    (leads || []).forEach(lead => {
+      const campaignId = lead.campaign_id || 'unknown';
+      const campaignName = lead.campaign || 'Unknown';
+
+      if (!campaignData[campaignId]) {
+        campaignData[campaignId] = {
+          campaignId,
+          campaignName,
+          totalLeads: 0,
+          totalConversions: 0,
+          totalRevenue: 0,
+          conversionRate: 0,
+          averageOrderValue: 0,
+          topSources: {},
+          topMediums: {}
+        };
       }
-      
-      const attribution = attributionMap.get(key)!;
-      attribution.leads.push(lead);
-      
-      if (lead.status === 'converted') {
-        attribution.conversions++;
+
+      campaignData[campaignId].totalLeads++;
+
+      // Track sources and mediums
+      if (lead.utm_source) {
+        campaignData[campaignId].topSources[lead.utm_source] = 
+          (campaignData[campaignId].topSources[lead.utm_source] || 0) + 1;
       }
-      
-      // Use a default score if not available - safely access lead_score
-      const leadScore = (lead as any).lead_score || 50;
-      attribution.total_score += leadScore;
+      if (lead.utm_medium) {
+        campaignData[campaignId].topMediums[lead.utm_medium] = 
+          (campaignData[campaignId].topMediums[lead.utm_medium] || 0) + 1;
+      }
     });
 
-    // Convert to array and calculate metrics
-    const attributionData: AttributionData[] = Array.from(attributionMap.values()).map(attr => {
-      const leadsCount = attr.leads.length;
-      const conversionRate = leadsCount > 0 ? (attr.conversions / leadsCount) * 100 : 0;
-      const avgLeadScore = leadsCount > 0 ? attr.total_score / leadsCount : 0;
+    // Add sales data
+    (sales || []).forEach(sale => {
+      const campaignId = sale.campaign_id || 'unknown';
       
-      return {
-        source: attr.source,
-        medium: attr.medium,
-        campaign: attr.campaign,
-        leads_count: leadsCount,
-        conversion_rate: conversionRate,
-        avg_lead_score: avgLeadScore,
-        total_value: attr.conversions * 100, // Assuming R$100 per conversion
-        cost_per_lead: 0, // Would need ad spend data
-        roi: 0 // Would need cost data
-      };
+      if (campaignData[campaignId]) {
+        campaignData[campaignId].totalConversions++;
+        campaignData[campaignId].totalRevenue += sale.amount || 0;
+      }
     });
 
-    return attributionData.sort((a, b) => b.leads_count - a.leads_count);
+    // Calculate rates
+    Object.values(campaignData).forEach(campaign => {
+      if (campaign.totalLeads > 0) {
+        campaign.conversionRate = (campaign.totalConversions / campaign.totalLeads) * 100;
+      }
+      if (campaign.totalConversions > 0) {
+        campaign.averageOrderValue = campaign.totalRevenue / campaign.totalConversions;
+      }
+    });
+
+    return Object.values(campaignData);
   } catch (error) {
-    console.error("Error getting attribution report:", error);
+    console.error('Error generating attribution report:', error);
     return [];
   }
 };
 
-export const getLeadSourceReport = async (
-  startDate?: string,
-  endDate?: string
-): Promise<LeadSourceReport[]> => {
+export const getTopPerformingChannels = async (limit: number = 10) => {
   try {
-    let query = supabase
+    const { data: leads, error } = await supabase
       .from('leads')
-      .select(`
-        created_at,
-        status,
-        campaigns!leads_campaign_id_fkey(utm_source)
-      `)
-      .order('created_at', { ascending: true });
+      .select('utm_source, utm_medium')
+      .not('utm_source', 'is', null);
 
-    if (startDate) {
-      query = query.gte('created_at', startDate);
-    }
-    if (endDate) {
-      query = query.lte('created_at', endDate);
+    if (error) {
+      console.error('Error fetching leads for channel performance:', error);
+      return [];
     }
 
-    const { data: leads, error } = await query;
+    const channelPerformance: { [key: string]: number } = {};
 
-    if (error) throw error;
-
-    // Group by date
-    const dateMap = new Map<string, {
-      instagram_leads: number;
-      facebook_leads: number;
-      other_leads: number;
-      instagram_conversions: number;
-      facebook_conversions: number;
-      other_conversions: number;
-    }>();
-
-    leads?.forEach(lead => {
-      const date = lead.created_at.split('T')[0]; // Get date part only
-      const source = lead.campaigns?.utm_source || 'other';
-      const isConversion = lead.status === 'converted';
-      
-      if (!dateMap.has(date)) {
-        dateMap.set(date, {
-          instagram_leads: 0,
-          facebook_leads: 0,
-          other_leads: 0,
-          instagram_conversions: 0,
-          facebook_conversions: 0,
-          other_conversions: 0
-        });
-      }
-      
-      const dayData = dateMap.get(date)!;
-      
-      if (source === 'instagram') {
-        dayData.instagram_leads++;
-        if (isConversion) dayData.instagram_conversions++;
-      } else if (source === 'facebook') {
-        dayData.facebook_leads++;
-        if (isConversion) dayData.facebook_conversions++;
-      } else {
-        dayData.other_leads++;
-        if (isConversion) dayData.other_conversions++;
-      }
+    (leads || []).forEach(lead => {
+      const channel = `${lead.utm_source || 'unknown'} / ${lead.utm_medium || 'unknown'}`;
+      channelPerformance[channel] = (channelPerformance[channel] || 0) + 1;
     });
 
-    // Convert to array
-    return Array.from(dateMap.entries()).map(([date, data]) => ({
-      date,
-      ...data
-    }));
+    return Object.entries(channelPerformance)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, limit)
+      .map(([channel, count]) => ({ channel, leads: count }));
   } catch (error) {
-    console.error("Error getting lead source report:", error);
-    return [];
-  }
-};
-
-export const getCampaignPerformanceDetails = async (
-  startDate?: string,
-  endDate?: string
-): Promise<CampaignPerformanceDetail[]> => {
-  try {
-    let query = supabase
-      .from('campaigns')
-      .select(`
-        *,
-        leads!leads_campaign_id_fkey(*)
-      `)
-      .order('created_at', { ascending: false });
-
-    const { data: campaigns, error } = await query;
-
-    if (error) throw error;
-
-    return campaigns?.map(campaign => {
-      const leads = campaign.leads || [];
-      
-      // Filter by date if provided
-      const filteredLeads = leads.filter(lead => {
-        if (startDate && lead.created_at < startDate) return false;
-        if (endDate && lead.created_at > endDate) return false;
-        return true;
-      });
-      
-      const totalLeads = filteredLeads.length;
-      const qualifiedLeads = filteredLeads.filter(l => 
-        ['contacted', 'qualified', 'converted'].includes(l.status)
-      ).length;
-      const convertedLeads = filteredLeads.filter(l => l.status === 'converted').length;
-      const lostLeads = filteredLeads.filter(l => l.status === 'lost').length;
-      
-      const avgLeadScore = totalLeads > 0 
-        ? filteredLeads.reduce((sum, lead) => sum + ((lead as any).lead_score || 50), 0) / totalLeads 
-        : 0;
-      
-      const conversionRate = totalLeads > 0 ? (convertedLeads / totalLeads) * 100 : 0;
-      const qualificationRate = totalLeads > 0 ? (qualifiedLeads / totalLeads) * 100 : 0;
-      
-      return {
-        campaign_id: campaign.id,
-        campaign_name: campaign.name,
-        utm_source: campaign.utm_source || 'direct',
-        utm_medium: campaign.utm_medium || 'organic',
-        utm_campaign: campaign.utm_campaign || campaign.name,
-        total_leads: totalLeads,
-        qualified_leads: qualifiedLeads,
-        converted_leads: convertedLeads,
-        lost_leads: lostLeads,
-        avg_lead_score: avgLeadScore,
-        conversion_rate: conversionRate,
-        qualification_rate: qualificationRate
-      };
-    }) || [];
-  } catch (error) {
-    console.error("Error getting campaign performance details:", error);
+    console.error('Error getting top performing channels:', error);
     return [];
   }
 };

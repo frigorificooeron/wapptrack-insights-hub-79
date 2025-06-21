@@ -1,191 +1,169 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-// Gerar um fingerprint único do navegador
-export const generateBrowserFingerprint = (): string => {
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  ctx.textBaseline = 'top';
-  ctx.font = '14px Arial';
-  ctx.fillText('Browser fingerprint', 2, 2);
-  
-  const fingerprint = [
-    navigator.userAgent,
-    navigator.language,
-    screen.width + 'x' + screen.height,
-    new Date().getTimezoneOffset(),
-    canvas.toDataURL(),
-    navigator.platform,
-    navigator.cookieEnabled,
-    localStorage.length,
-    sessionStorage.length
-  ].join('|');
-  
-  // Criar hash simples
-  let hash = 0;
-  for (let i = 0; i < fingerprint.length; i++) {
-    const char = fingerprint.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32bit integer
-  }
-  
-  return Math.abs(hash).toString(36);
-};
+interface SessionData {
+  id: string;
+  lead_id?: string;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_content?: string;
+  utm_term?: string;
+  referrer?: string;
+  landing_page?: string;
+  session_duration?: number;
+  pages_visited?: number;
+  created_at: string;
+}
 
-// Gerar session ID único
-export const generateSessionId = (): string => {
-  let sessionId = sessionStorage.getItem('tracking_session_id');
-  if (!sessionId) {
-    sessionId = Date.now().toString(36) + Math.random().toString(36).substr(2);
-    sessionStorage.setItem('tracking_session_id', sessionId);
-  }
-  return sessionId;
-};
+interface TrackSessionParams {
+  leadId?: string;
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  utmContent?: string;
+  utmTerm?: string;
+  referrer?: string;
+  landingPage?: string;
+  sessionDuration?: number;
+  pagesVisited?: number;
+}
 
-// Obter IP público
-export const getPublicIP = async (): Promise<string> => {
+export const trackSession = async (params: TrackSessionParams): Promise<boolean> => {
   try {
-    const response = await fetch('https://api.ipify.org?format=json');
-    const data = await response.json();
-    return data.ip;
-  } catch (error) {
-    console.warn('Não foi possível obter IP público:', error);
-    return 'unknown';
-  }
-};
+    // Instead of creating a separate tracking_sessions table, 
+    // we'll store this data in the leads table or utm_clicks table
+    
+    if (params.leadId) {
+      // Update lead with session information
+      const { error } = await supabase
+        .from('leads')
+        .update({
+          utm_source: params.utmSource,
+          utm_medium: params.utmMedium,
+          utm_campaign: params.utmCampaign,
+          utm_content: params.utmContent,
+          utm_term: params.utmTerm
+        })
+        .eq('id', params.leadId);
 
-// Salvar dados de tracking com identificadores únicos
-export const saveTrackingData = async (utms: any, campaignId: string) => {
-  try {
-    console.log('💾 Salvando dados de tracking com identificadores únicos...');
-    
-    const sessionId = generateSessionId();
-    const browserFingerprint = generateBrowserFingerprint();
-    const publicIP = await getPublicIP();
-    
-    const trackingData = {
-      session_id: sessionId,
-      browser_fingerprint: browserFingerprint,
-      ip_address: publicIP,
-      user_agent: navigator.userAgent,
-      screen_resolution: `${screen.width}x${screen.height}`,
-      language: navigator.language,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      referrer: document.referrer,
-      current_url: window.location.href,
-      campaign_id: campaignId,
-      utm_source: utms.utm_source,
-      utm_medium: utms.utm_medium,
-      utm_campaign: utms.utm_campaign,
-      utm_content: utms.utm_content,
-      utm_term: utms.utm_term
-    };
-    
-    console.log('📊 Dados de tracking preparados:', {
-      session_id: sessionId,
-      browser_fingerprint: browserFingerprint,
-      ip_address: publicIP,
-      campaign_id: campaignId,
-      utm_campaign: utms.utm_campaign
-    });
-    
-    // Inserir diretamente na tabela tracking_sessions
-    const { error } = await supabase
-      .from('tracking_sessions')
-      .insert({
-        session_id: trackingData.session_id,
-        browser_fingerprint: trackingData.browser_fingerprint,
-        ip_address: trackingData.ip_address,
-        user_agent: trackingData.user_agent,
-        screen_resolution: trackingData.screen_resolution,
-        language: trackingData.language,
-        timezone: trackingData.timezone,
-        referrer: trackingData.referrer,
-        current_url: trackingData.current_url,
-        campaign_id: trackingData.campaign_id,
-        utm_source: trackingData.utm_source,
-        utm_medium: trackingData.utm_medium,
-        utm_campaign: trackingData.utm_campaign,
-        utm_content: trackingData.utm_content,
-        utm_term: trackingData.utm_term
-      });
-    
-    if (error) {
-      console.error('❌ Erro ao salvar dados de tracking:', error);
-      return { success: false, error };
+      if (error) {
+        console.error('Error updating lead with session data:', error);
+        return false;
+      }
+    } else {
+      // Create a utm_clicks entry for anonymous sessions
+      const { error } = await supabase
+        .from('utm_clicks')
+        .insert({
+          phone: 'anonymous', // Required field
+          utm_source: params.utmSource,
+          utm_medium: params.utmMedium,
+          utm_campaign: params.utmCampaign,
+          utm_content: params.utmContent,
+          utm_term: params.utmTerm
+        });
+
+      if (error) {
+        console.error('Error creating utm_clicks entry:', error);
+        return false;
+      }
     }
-    
-    console.log('✅ Dados de tracking salvos com identificadores únicos');
-    
-    // Também salvar no localStorage para redundância
-    localStorage.setItem('last_tracking_data', JSON.stringify({
-      session_id: sessionId,
-      browser_fingerprint: browserFingerprint,
-      campaign_id: campaignId,
-      utm_campaign: utms.utm_campaign,
-      timestamp: Date.now()
-    }));
-    
-    return { 
-      success: true, 
-      session_id: sessionId,
-      browser_fingerprint: browserFingerprint 
-    };
+
+    console.log('Session tracked successfully');
+    return true;
   } catch (error) {
-    console.error('❌ Erro geral ao salvar tracking:', error);
-    return { success: false, error };
+    console.error('Error tracking session:', error);
+    return false;
   }
 };
 
-// Buscar dados de tracking por identificadores
-export const getTrackingDataByIdentifiers = async (phone: string) => {
+export const getSessionData = async (leadId: string): Promise<SessionData | null> => {
   try {
-    console.log('🔍 Buscando dados de tracking por identificadores para:', phone);
-    
-    // Tentar obter dados atuais do dispositivo para correlação
-    const currentBrowserFingerprint = generateBrowserFingerprint();
-    const currentSessionId = generateSessionId();
-    const currentIP = await getPublicIP();
-    
-    console.log('🔍 Identificadores atuais:', {
-      browser_fingerprint: currentBrowserFingerprint,
-      session_id: currentSessionId,
-      ip_address: currentIP
-    });
-    
-    // Buscar nas últimas 4 horas
-    const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString();
-    
-    // Buscar por fingerprint, session ou IP usando query direta
-    const { data: trackingData, error } = await supabase
-      .from('tracking_sessions')
-      .select('*')
-      .gte('created_at', fourHoursAgo)
-      .or(`browser_fingerprint.eq.${currentBrowserFingerprint},session_id.eq.${currentSessionId},ip_address.eq.${currentIP}`)
-      .order('created_at', { ascending: false })
-      .limit(1);
-    
-    if (error) {
-      console.error('❌ Erro ao buscar tracking data:', error);
+    const { data, error } = await supabase
+      .from('leads')
+      .select('id, utm_source, utm_medium, utm_campaign, utm_content, utm_term, created_at')
+      .eq('id', leadId)
+      .single();
+
+    if (error || !data) {
+      console.error('Error fetching session data:', error);
       return null;
     }
-    
-    if (trackingData && trackingData.length > 0) {
-      const session = trackingData[0];
-      console.log('✅ Dados de tracking encontrados:', {
-        campaign_id: session.campaign_id,
-        utm_campaign: session.utm_campaign,
-        match_type: session.browser_fingerprint === currentBrowserFingerprint ? 'fingerprint' : 
-                   session.session_id === currentSessionId ? 'session' : 'ip'
-      });
-      
-      return session;
-    }
-    
-    console.log('❌ Nenhum dado de tracking encontrado para os identificadores atuais');
-    return null;
+
+    return {
+      id: data.id,
+      lead_id: leadId,
+      utm_source: data.utm_source,
+      utm_medium: data.utm_medium,
+      utm_campaign: data.utm_campaign,
+      utm_content: data.utm_content,
+      utm_term: data.utm_term,
+      created_at: data.created_at
+    };
   } catch (error) {
-    console.error('❌ Erro geral ao buscar tracking data:', error);
+    console.error('Error getting session data:', error);
     return null;
+  }
+};
+
+export const getAllSessions = async (): Promise<SessionData[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('utm_clicks')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching all sessions:', error);
+      return [];
+    }
+
+    return (data || []).map(item => ({
+      id: item.id,
+      utm_source: item.utm_source,
+      utm_medium: item.utm_medium,
+      utm_campaign: item.utm_campaign,
+      utm_content: item.utm_content,
+      utm_term: item.utm_term,
+      created_at: item.created_at
+    }));
+  } catch (error) {
+    console.error('Error getting all sessions:', error);
+    return [];
+  }
+};
+
+export const getSessionStats = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('utm_clicks')
+      .select('utm_source, utm_medium, utm_campaign');
+
+    if (error) {
+      console.error('Error fetching session stats:', error);
+      return { sources: {}, mediums: {}, campaigns: {} };
+    }
+
+    const sources: { [key: string]: number } = {};
+    const mediums: { [key: string]: number } = {};
+    const campaigns: { [key: string]: number } = {};
+
+    (data || []).forEach(item => {
+      if (item.utm_source) {
+        sources[item.utm_source] = (sources[item.utm_source] || 0) + 1;
+      }
+      if (item.utm_medium) {
+        mediums[item.utm_medium] = (mediums[item.utm_medium] || 0) + 1;
+      }
+      if (item.utm_campaign) {
+        campaigns[item.utm_campaign] = (campaigns[item.utm_campaign] || 0) + 1;
+      }
+    });
+
+    return { sources, mediums, campaigns };
+  } catch (error) {
+    console.error('Error getting session stats:', error);
+    return { sources: {}, mediums: {}, campaigns: {} };
   }
 };

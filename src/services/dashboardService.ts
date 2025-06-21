@@ -1,3 +1,4 @@
+
 import { supabase } from "../integrations/supabase/client";
 import { Lead, Sale } from "../types";
 
@@ -25,7 +26,12 @@ export const getDashboardStats = async () => {
       totalLeads,
       totalSales,
       totalRevenue,
-      conversionRate: totalLeads > 0 ? (totalSales / totalLeads) * 100 : 0
+      conversionRate: totalLeads > 0 ? (totalSales / totalLeads) * 100 : 0,
+      todaysLeads: 0,
+      confirmedSales: totalSales,
+      pendingConversations: 0,
+      monthlyLeads: totalLeads,
+      monthlyRevenue: totalRevenue
     };
   } catch (error) {
     console.error("Error fetching dashboard stats:", error);
@@ -33,7 +39,12 @@ export const getDashboardStats = async () => {
       totalLeads: 0,
       totalSales: 0,
       totalRevenue: 0,
-      conversionRate: 0
+      conversionRate: 0,
+      todaysLeads: 0,
+      confirmedSales: 0,
+      pendingConversations: 0,
+      monthlyLeads: 0,
+      monthlyRevenue: 0
     };
   }
 };
@@ -66,7 +77,12 @@ export const getDashboardStatsByPeriod = async (startDate: string, endDate: stri
       totalLeads,
       totalSales,
       totalRevenue,
-      conversionRate: totalLeads > 0 ? (totalSales / totalLeads) * 100 : 0
+      conversionRate: totalLeads > 0 ? (totalSales / totalLeads) * 100 : 0,
+      todaysLeads: 0,
+      confirmedSales: totalSales,
+      pendingConversations: 0,
+      monthlyLeads: totalLeads,
+      monthlyRevenue: totalRevenue
     };
   } catch (error) {
     console.error("Error fetching dashboard stats by period:", error);
@@ -74,7 +90,12 @@ export const getDashboardStatsByPeriod = async (startDate: string, endDate: stri
       totalLeads: 0,
       totalSales: 0,
       totalRevenue: 0,
-      conversionRate: 0
+      conversionRate: 0,
+      todaysLeads: 0,
+      confirmedSales: 0,
+      pendingConversations: 0,
+      monthlyLeads: 0,
+      monthlyRevenue: 0
     };
   }
 };
@@ -83,21 +104,28 @@ export const getCampaignPerformance = async () => {
   try {
     const { data: leads, error } = await supabase
       .from('leads')
-      .select('campaign');
+      .select('campaign, campaign_id');
 
     if (error) throw error;
 
     const campaignCounts = leads?.reduce((acc, lead) => {
       const campaign = lead.campaign || 'Unknown';
-      acc[campaign] = (acc[campaign] || 0) + 1;
+      const campaignId = lead.campaign_id || 'unknown';
+      if (!acc[campaignId]) {
+        acc[campaignId] = {
+          campaignId,
+          campaignName: campaign,
+          leads: 0,
+          sales: 0,
+          revenue: 0,
+          conversionRate: 0
+        };
+      }
+      acc[campaignId].leads++;
       return acc;
-    }, {} as Record<string, number>) || {};
+    }, {} as Record<string, any>) || {};
 
-    return Object.entries(campaignCounts).map(([name, leads]) => ({
-      name,
-      leads,
-      conversions: 0 // Placeholder since we don't have conversion tracking yet
-    }));
+    return Object.values(campaignCounts);
   } catch (error) {
     console.error("Error fetching campaign performance:", error);
     return [];
@@ -150,38 +178,56 @@ export const getMonthlyStats = async () => {
   }
 };
 
-export const getTimelineData = async () => {
+export const getTimelineData = async (startDate?: string, endDate?: string) => {
   try {
-    const { data: leads, error: leadsError } = await supabase
+    let leadsQuery = supabase
       .from('leads')
       .select('created_at, name, campaign')
       .order('created_at', { ascending: false })
       .limit(10);
 
+    if (startDate) leadsQuery = leadsQuery.gte('created_at', startDate);
+    if (endDate) leadsQuery = leadsQuery.lte('created_at', endDate);
+
+    const { data: leads, error: leadsError } = await leadsQuery;
+
     if (leadsError) throw leadsError;
 
-    const { data: sales, error: salesError } = await supabase
+    let salesQuery = supabase
       .from('sales')
       .select('sale_date, amount')
       .order('sale_date', { ascending: false })
       .limit(10);
 
+    if (startDate) salesQuery = salesQuery.gte('sale_date', startDate);
+    if (endDate) salesQuery = salesQuery.lte('sale_date', endDate);
+
+    const { data: sales, error: salesError } = await salesQuery;
+
     if (salesError) throw salesError;
 
-    const timeline = [
-      ...(leads?.map(lead => ({
-        type: 'lead' as const,
-        date: lead.created_at,
-        description: `Novo lead: ${lead.name} (${lead.campaign})`
-      })) || []),
-      ...(sales?.map(sale => ({
-        type: 'sale' as const,
-        date: sale.sale_date,
-        description: `Venda realizada: R$ ${sale.amount?.toFixed(2) || '0.00'}`
-      })) || [])
-    ];
+    // Process data for timeline chart format
+    const timelineData: { [key: string]: { date: string; leads: number; sales: number; revenue: number } } = {};
 
-    return timeline.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    leads?.forEach(lead => {
+      const date = new Date(lead.created_at).toISOString().split('T')[0];
+      if (!timelineData[date]) {
+        timelineData[date] = { date, leads: 0, sales: 0, revenue: 0 };
+      }
+      timelineData[date].leads++;
+    });
+
+    sales?.forEach(sale => {
+      const date = new Date(sale.sale_date).toISOString().split('T')[0];
+      if (!timelineData[date]) {
+        timelineData[date] = { date, leads: 0, sales: 0, revenue: 0 };
+      }
+      timelineData[date].sales++;
+      timelineData[date].revenue += sale.amount || 0;
+    });
+
+    return Object.values(timelineData)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   } catch (error) {
     console.error("Error fetching timeline data:", error);
     return [];

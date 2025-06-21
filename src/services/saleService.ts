@@ -1,3 +1,4 @@
+
 import { Sale } from "../types";
 import { supabase } from "../integrations/supabase/client";
 
@@ -12,12 +13,14 @@ export const getSales = async (): Promise<Sale[]> => {
 
     return (sales || []).map(sale => ({
       id: sale.id,
-      amount: sale.amount || 0,
-      sale_date: sale.sale_date || sale.created_at,
-      status: sale.status || 'confirmed',
+      value: sale.amount || 0,
+      date: sale.sale_date || sale.created_at,
+      lead_name: '', // This needs to be populated from leads table if needed
+      campaign: '', // This needs to be populated from campaigns table if needed
+      product: '',
       notes: sale.notes || '',
       lead_id: sale.lead_id || '',
-      campaign_id: sale.campaign_id || '',
+      status: sale.status || 'confirmed',
       created_at: sale.created_at,
       updated_at: sale.updated_at
     }));
@@ -32,12 +35,12 @@ export const addSale = async (sale: Omit<Sale, 'id' | 'created_at' | 'updated_at
     const { data, error } = await supabase
       .from('sales')
       .insert({
-        amount: sale.amount,
-        sale_date: sale.sale_date,
-        status: sale.status,
+        amount: sale.value,
+        sale_date: sale.date,
+        status: sale.status || 'confirmed',
         notes: sale.notes,
-        lead_id: sale.lead_id,
-        campaign_id: sale.campaign_id
+        lead_id: sale.lead_id || null,
+        campaign_id: sale.campaign || null
       })
       .select()
       .single();
@@ -46,12 +49,14 @@ export const addSale = async (sale: Omit<Sale, 'id' | 'created_at' | 'updated_at
 
     return {
       id: data.id,
-      amount: data.amount,
-      sale_date: data.sale_date,
-      status: data.status,
+      value: data.amount,
+      date: data.sale_date,
+      lead_name: sale.lead_name || '',
+      campaign: sale.campaign || '',
+      product: sale.product || '',
       notes: data.notes,
       lead_id: data.lead_id,
-      campaign_id: data.campaign_id,
+      status: data.status,
       created_at: data.created_at,
       updated_at: data.updated_at
     };
@@ -64,12 +69,12 @@ export const addSale = async (sale: Omit<Sale, 'id' | 'created_at' | 'updated_at
 export const updateSale = async (id: string, sale: Partial<Sale>): Promise<Sale> => {
   try {
     const updateData: any = {};
-    if (sale.amount !== undefined) updateData.amount = sale.amount;
-    if (sale.sale_date !== undefined) updateData.sale_date = sale.sale_date;
+    if (sale.value !== undefined) updateData.amount = sale.value;
+    if (sale.date !== undefined) updateData.sale_date = sale.date;
     if (sale.status !== undefined) updateData.status = sale.status;
     if (sale.notes !== undefined) updateData.notes = sale.notes;
     if (sale.lead_id !== undefined) updateData.lead_id = sale.lead_id;
-    if (sale.campaign_id !== undefined) updateData.campaign_id = sale.campaign_id;
+    if (sale.campaign !== undefined) updateData.campaign_id = sale.campaign;
 
     const { data, error } = await supabase
       .from('sales')
@@ -82,12 +87,14 @@ export const updateSale = async (id: string, sale: Partial<Sale>): Promise<Sale>
 
     return {
       id: data.id,
-      amount: data.amount,
-      sale_date: data.sale_date,
-      status: data.status,
+      value: data.amount,
+      date: data.sale_date,
+      lead_name: sale.lead_name || '',
+      campaign: sale.campaign || '',
+      product: sale.product || '',
       notes: data.notes,
       lead_id: data.lead_id,
-      campaign_id: data.campaign_id,
+      status: data.status,
       created_at: data.created_at,
       updated_at: data.updated_at
     };

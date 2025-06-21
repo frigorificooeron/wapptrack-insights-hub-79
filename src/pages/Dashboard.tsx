@@ -7,7 +7,7 @@ import BarChart from '@/components/charts/BarChart';
 import LineChart from '@/components/charts/LineChart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LayoutDashboard, Users, MessageSquare, DollarSign, TrendingUp, Calendar } from 'lucide-react';
-import { getDashboardStatsByPeriod, getCampaignPerformance, getTimelineData } from '@/services/dataService';
+import { getDashboardStatsByPeriod, getCampaignPerformance, getTimelineData } from '@/services/dashboardService';
 import { DashboardStats, CampaignPerformance, DateRange, TimelineDataPoint } from '@/types';
 import { formatCurrency, formatPercent } from '@/lib/utils';
 
@@ -33,9 +33,9 @@ const Dashboard = () => {
     try {
       setIsLoading(true);
       const [dashboardStats, campaignData, timeline] = await Promise.all([
-        getDashboardStatsByPeriod(dateRange.startDate, dateRange.endDate),
+        getDashboardStatsByPeriod(dateRange.startDate.toISOString(), dateRange.endDate.toISOString()),
         getCampaignPerformance(),
-        getTimelineData(dateRange.startDate, dateRange.endDate)
+        getTimelineData(dateRange.startDate.toISOString(), dateRange.endDate.toISOString())
       ]);
       setStats(dashboardStats);
       setCampaignPerformance(campaignData);
@@ -90,7 +90,6 @@ const Dashboard = () => {
               value={stats?.monthlyLeads || 0}
               icon={Calendar}
               iconColor="#10B981"
-              trend={stats?.monthlyLeadsTrend}
             />
             <StatCard
               title="Vendas Confirmadas"
@@ -103,7 +102,6 @@ const Dashboard = () => {
               value={formatCurrency(stats?.monthlyRevenue || 0)}
               icon={TrendingUp}
               iconColor="#F59E0B"
-              trend={stats?.monthlyRevenueTrend}
             />
             <StatCard
               title="Conversas Pendentes"
