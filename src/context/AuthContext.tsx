@@ -104,6 +104,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       if (error) throw error;
+      toast.success("Login realizado com sucesso!");
+      navigate("/dashboard");
       
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Erro ao fazer login';
