@@ -17,7 +17,6 @@ const EvolutionApiSettings = () => {
   // Configurações fixas internas - não editáveis pelo usuário
   const EVOLUTION_CONFIG = {
     instance_name: 'Herickson',
-    api_key: 'your-api-key-here', // Substitua pela sua API key real
     base_url: 'https://evolutionapi.workidigital.tech'
   };
 
@@ -28,8 +27,7 @@ const EvolutionApiSettings = () => {
 
     try {
       const response = await evolutionService.getQRCode(
-        EVOLUTION_CONFIG.instance_name,
-        EVOLUTION_CONFIG.api_key
+        EVOLUTION_CONFIG.instance_name
       );
 
       if (response.success) {

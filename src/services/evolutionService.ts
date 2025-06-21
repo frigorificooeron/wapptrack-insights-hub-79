@@ -10,12 +10,11 @@ export interface QRCodeResponse {
 }
 
 export const evolutionService = {
-  async getQRCode(instanceId: string, apiKey: string): Promise<QRCodeResponse> {
+  async getQRCode(instanceId: string): Promise<QRCodeResponse> {
     try {
       const { data, error } = await supabase.functions.invoke('evolution-qrcode', {
         body: {
-          instanceId,
-          apiKey
+          instanceId
         }
       });
 

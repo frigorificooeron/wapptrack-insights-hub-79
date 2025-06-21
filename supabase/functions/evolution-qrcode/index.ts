@@ -12,16 +12,32 @@ serve(async (req) => {
   }
 
   try {
-    const { instanceId, apiKey } = await req.json();
+    const { instanceId } = await req.json();
 
-    if (!instanceId || !apiKey) {
+    if (!instanceId) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'instanceId and apiKey are required' 
+          error: 'instanceId is required' 
         }),
         { 
           status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    // Pega a API key dos secrets do Supabase
+    const apiKey = Deno.env.get('EVOLUTION_API_KEY');
+    
+    if (!apiKey) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Evolution API key not configured' 
+        }),
+        { 
+          status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
