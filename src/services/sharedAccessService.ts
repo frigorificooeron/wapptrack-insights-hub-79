@@ -1,3 +1,4 @@
+
 import { supabase } from '../integrations/supabase/client';
 
 export interface SharedTokenData {
@@ -93,4 +94,3 @@ export const getUserSharedTokens = async (): Promise<SharedTokenData[]> => {
     return [];
   }
 };
-

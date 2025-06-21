@@ -33,8 +33,9 @@ serve(async (req) => {
       );
     }
 
+    // Use only the current Supabase project
     const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
+      'https://bwicygxyhkdgrypqrijo.supabase.co',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
     
