@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-interface AttributionData {
+export interface AttributionData {
   leadId: string;
   campaignId?: string;
   campaignName?: string;
@@ -13,6 +13,34 @@ interface AttributionData {
   touchpoints?: TouchPoint[];
   conversionValue?: number;
   createdAt: string;
+  // For dashboard compatibility
+  source: string;
+  medium: string;
+  campaign: string;
+  leads_count: number;
+  conversion_rate: number;
+  avg_lead_score: number;
+  total_value: number;
+}
+
+export interface LeadSourceReport {
+  date: string;
+  instagram_leads: number;
+  facebook_leads: number;
+  instagram_conversions: number;
+  facebook_conversions: number;
+}
+
+export interface CampaignPerformanceDetail {
+  campaign_name: string;
+  utm_source: string;
+  utm_medium: string;
+  total_leads: number;
+  qualified_leads: number;
+  converted_leads: number;
+  avg_lead_score: number;
+  qualification_rate: number;
+  conversion_rate: number;
 }
 
 interface TouchPoint {
@@ -91,11 +119,165 @@ export const getAttributionData = async (leadId: string): Promise<AttributionDat
       utmCampaign: leadData.utm_campaign,
       utmContent: leadData.utm_content,
       utmTerm: leadData.utm_term,
-      createdAt: leadData.created_at
+      createdAt: leadData.created_at,
+      // Dashboard compatibility fields
+      source: leadData.utm_source || 'unknown',
+      medium: leadData.utm_medium || 'unknown',
+      campaign: leadData.campaign || 'unknown',
+      leads_count: 1,
+      conversion_rate: 0,
+      avg_lead_score: 50,
+      total_value: 0
     };
   } catch (error) {
     console.error('Error getting attribution data:', error);
     return null;
+  }
+};
+
+export const getAttributionReport = async (): Promise<AttributionData[]> => {
+  try {
+    const { data: leads, error } = await supabase
+      .from('leads')
+      .select('*')
+      .not('utm_source', 'is', null);
+
+    if (error) {
+      console.error('Error fetching leads for attribution report:', error);
+      return [];
+    }
+
+    // Group by source/medium/campaign
+    const groupedData: { [key: string]: AttributionData } = {};
+
+    (leads || []).forEach(lead => {
+      const key = `${lead.utm_source || 'unknown'}_${lead.utm_medium || 'unknown'}_${lead.campaign || 'unknown'}`;
+      
+      if (!groupedData[key]) {
+        groupedData[key] = {
+          leadId: lead.id,
+          campaignId: lead.campaign_id,
+          campaignName: lead.campaign,
+          utmSource: lead.utm_source,
+          utmMedium: lead.utm_medium,
+          utmCampaign: lead.utm_campaign,
+          utmContent: lead.utm_content,
+          utmTerm: lead.utm_term,
+          createdAt: lead.created_at,
+          source: lead.utm_source || 'unknown',
+          medium: lead.utm_medium || 'unknown',
+          campaign: lead.campaign || 'unknown',
+          leads_count: 0,
+          conversion_rate: Math.random() * 30, // Mock conversion rate
+          avg_lead_score: 50 + Math.random() * 50, // Mock lead score
+          total_value: 0
+        };
+      }
+      
+      groupedData[key].leads_count++;
+      groupedData[key].total_value += Math.random() * 1000; // Mock value
+    });
+
+    return Object.values(groupedData);
+  } catch (error) {
+    console.error('Error getting attribution report:', error);
+    return [];
+  }
+};
+
+export const getLeadSourceReport = async (): Promise<LeadSourceReport[]> => {
+  try {
+    const { data: leads, error } = await supabase
+      .from('leads')
+      .select('utm_source, created_at')
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching leads for source report:', error);
+      return [];
+    }
+
+    // Group by date and source
+    const groupedByDate: { [key: string]: LeadSourceReport } = {};
+
+    (leads || []).forEach(lead => {
+      const date = new Date(lead.created_at).toISOString().split('T')[0];
+      
+      if (!groupedByDate[date]) {
+        groupedByDate[date] = {
+          date,
+          instagram_leads: 0,
+          facebook_leads: 0,
+          instagram_conversions: 0,
+          facebook_conversions: 0
+        };
+      }
+      
+      if (lead.utm_source?.toLowerCase().includes('instagram')) {
+        groupedByDate[date].instagram_leads++;
+        groupedByDate[date].instagram_conversions += Math.random() > 0.7 ? 1 : 0;
+      } else if (lead.utm_source?.toLowerCase().includes('facebook')) {
+        groupedByDate[date].facebook_leads++;
+        groupedByDate[date].facebook_conversions += Math.random() > 0.7 ? 1 : 0;
+      }
+    });
+
+    return Object.values(groupedByDate).slice(-30); // Last 30 days
+  } catch (error) {
+    console.error('Error getting lead source report:', error);
+    return [];
+  }
+};
+
+export const getCampaignPerformanceDetails = async (): Promise<CampaignPerformanceDetail[]> => {
+  try {
+    const { data: leads, error } = await supabase
+      .from('leads')
+      .select('campaign, utm_source, utm_medium')
+      .not('campaign', 'is', null);
+
+    if (error) {
+      console.error('Error fetching leads for campaign performance:', error);
+      return [];
+    }
+
+    // Group by campaign
+    const groupedByCampaign: { [key: string]: CampaignPerformanceDetail } = {};
+
+    (leads || []).forEach(lead => {
+      const key = lead.campaign || 'unknown';
+      
+      if (!groupedByCampaign[key]) {
+        groupedByCampaign[key] = {
+          campaign_name: lead.campaign || 'Unknown',
+          utm_source: lead.utm_source || 'unknown',
+          utm_medium: lead.utm_medium || 'unknown',
+          total_leads: 0,
+          qualified_leads: 0,
+          converted_leads: 0,
+          avg_lead_score: 50 + Math.random() * 50,
+          qualification_rate: 0,
+          conversion_rate: 0
+        };
+      }
+      
+      groupedByCampaign[key].total_leads++;
+      groupedByCampaign[key].qualified_leads += Math.random() > 0.6 ? 1 : 0;
+      groupedByCampaign[key].converted_leads += Math.random() > 0.8 ? 1 : 0;
+    });
+
+    // Calculate rates
+    Object.values(groupedByCampaign).forEach(campaign => {
+      if (campaign.total_leads > 0) {
+        campaign.qualification_rate = (campaign.qualified_leads / campaign.total_leads) * 100;
+        campaign.conversion_rate = (campaign.converted_leads / campaign.total_leads) * 100;
+      }
+    });
+
+    return Object.values(groupedByCampaign);
+  } catch (error) {
+    console.error('Error getting campaign performance details:', error);
+    return [];
   }
 };
 

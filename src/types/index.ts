@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   name?: string;
@@ -86,13 +85,16 @@ export interface Campaign {
 
 export interface Sale {
   id: string;
-  value: number;
-  date: string;
-  lead_id?: string;
-  lead_name: string;
-  campaign: string;
+  value: number; // Maps to database 'amount' field
+  date: string; // Maps to database 'sale_date' field
+  lead_name?: string;
+  campaign?: string;
   product?: string;
   notes?: string;
+  lead_id?: string;
+  status?: 'confirmed' | 'pending' | 'cancelled'; // Add status field
+  created_at: string;
+  updated_at: string;
 }
 
 export type CompanySettings = {

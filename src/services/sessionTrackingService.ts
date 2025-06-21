@@ -29,6 +29,53 @@ interface TrackSessionParams {
   pagesVisited?: number;
 }
 
+export interface SaveTrackingDataResult {
+  success: boolean;
+  session_id?: string;
+  browser_fingerprint?: string;
+}
+
+export const saveTrackingData = async (
+  utmParams: {
+    utm_source?: string;
+    utm_medium?: string;
+    utm_campaign?: string;
+    utm_content?: string;
+    utm_term?: string;
+  },
+  campaignId: string
+): Promise<SaveTrackingDataResult> => {
+  try {
+    // Create a utm_clicks entry for tracking
+    const { data, error } = await supabase
+      .from('utm_clicks')
+      .insert({
+        phone: 'anonymous',
+        utm_source: utmParams.utm_source,
+        utm_medium: utmParams.utm_medium,
+        utm_campaign: utmParams.utm_campaign,
+        utm_content: utmParams.utm_content,
+        utm_term: utmParams.utm_term
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error saving tracking data:', error);
+      return { success: false };
+    }
+
+    return {
+      success: true,
+      session_id: data.id,
+      browser_fingerprint: `${utmParams.utm_source || 'unknown'}_${Date.now()}`
+    };
+  } catch (error) {
+    console.error('Error saving tracking data:', error);
+    return { success: false };
+  }
+};
+
 export const trackSession = async (params: TrackSessionParams): Promise<boolean> => {
   try {
     // Instead of creating a separate tracking_sessions table, 

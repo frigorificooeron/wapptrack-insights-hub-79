@@ -50,7 +50,18 @@ export const getSharedTokenPermissions = async (token: string): Promise<SharedTo
       return null;
     }
 
-    return data?.[0] || null;
+    const tokenData = data?.[0];
+    if (!tokenData) return null;
+
+    return {
+      id: tokenData.id,
+      token: token, // Include the token since it's required
+      permissions: tokenData.permissions,
+      name: tokenData.name,
+      description: tokenData.description,
+      created_at: tokenData.created_at,
+      expires_at: tokenData.expires_at
+    };
   } catch (error) {
     console.error('Error in getSharedTokenPermissions:', error);
     return null;
@@ -88,7 +99,15 @@ export const getUserSharedTokens = async (): Promise<SharedTokenData[]> => {
       return [];
     }
 
-    return data || [];
+    return (data || []).map(item => ({
+      id: item.id,
+      token: item.token,
+      permissions: item.permissions,
+      name: item.name,
+      description: item.description,
+      created_at: item.created_at,
+      expires_at: item.expires_at
+    }));
   } catch (error) {
     console.error('Error in getUserSharedTokens:', error);
     return [];

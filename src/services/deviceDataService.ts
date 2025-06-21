@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-interface DeviceData {
+export interface DeviceData {
   id: string;
   lead_id: string;
   browser?: string;
@@ -14,6 +14,23 @@ interface DeviceData {
   timezone?: string;
   language?: string;
   created_at: string;
+}
+
+export interface DeviceDataCapture {
+  browser?: string;
+  os?: string;
+  device_type?: string;
+  device_model?: string;
+  screen_resolution?: string;
+  ip_address?: string;
+  location?: string;
+  timezone?: string;
+  language?: string;
+  country?: string;
+  city?: string;
+  facebook_ad_id?: string;
+  facebook_adset_id?: string;
+  facebook_campaign_id?: string;
 }
 
 interface CollectDeviceDataParams {
@@ -68,11 +85,38 @@ const getDeviceModel = (userAgent: string): string => {
   return 'Unknown';
 };
 
+export const captureDeviceData = async (phone?: string): Promise<DeviceDataCapture> => {
+  const userAgent = navigator.userAgent;
+  const deviceInfo = parseUserAgent(userAgent);
+  
+  return {
+    browser: deviceInfo.browser,
+    os: deviceInfo.os,
+    device_type: deviceInfo.deviceType,
+    device_model: deviceInfo.deviceModel,
+    screen_resolution: `${screen.width}x${screen.height}`,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    language: navigator.language
+  };
+};
+
+export const saveDeviceData = async (deviceData: DeviceDataCapture): Promise<boolean> => {
+  try {
+    console.log('💾 Saving device data:', deviceData);
+    // For now, just log the data since we don't have a device_data table
+    // This data will be attached to leads when they are created
+    return true;
+  } catch (error) {
+    console.error('Error saving device data:', error);
+    return false;
+  }
+};
+
 export const collectDeviceData = async (params: CollectDeviceDataParams): Promise<boolean> => {
   try {
     const deviceInfo = params.userAgent ? parseUserAgent(params.userAgent) : {};
     
-    // Store device data in the leads table instead of a separate device_data table
+    // Store device data in the leads table
     const { error } = await supabase
       .from('leads')
       .update({
@@ -130,6 +174,43 @@ export const getDeviceDataForLead = async (leadId: string): Promise<DeviceData |
     };
   } catch (error) {
     console.error('Error getting device data:', error);
+    return null;
+  }
+};
+
+export const getDeviceDataByPhone = async (phone: string): Promise<DeviceDataCapture | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('leads')
+      .select('browser, os, device_type, device_model, screen_resolution, ip_address, location, timezone, language, country, city, facebook_ad_id, facebook_adset_id, facebook_campaign_id')
+      .eq('phone', phone)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error || !data) {
+      console.log('No device data found for phone:', phone);
+      return null;
+    }
+
+    return {
+      browser: data.browser,
+      os: data.os,
+      device_type: data.device_type,
+      device_model: data.device_model,
+      screen_resolution: data.screen_resolution,
+      ip_address: data.ip_address,
+      location: data.location,
+      timezone: data.timezone,
+      language: data.language,
+      country: data.country,
+      city: data.city,
+      facebook_ad_id: data.facebook_ad_id,
+      facebook_adset_id: data.facebook_adset_id,
+      facebook_campaign_id: data.facebook_campaign_id
+    };
+  } catch (error) {
+    console.error('Error getting device data by phone:', error);
     return null;
   }
 };

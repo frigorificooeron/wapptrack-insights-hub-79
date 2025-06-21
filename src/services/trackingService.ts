@@ -42,7 +42,8 @@ export const trackRedirect = async (
       return { targetPhone: '5585998372658' };
     }
 
-    const type = eventType || campaign.event_type || 'lead';
+    // Use the campaign's redirect_type, not event_type
+    const type = eventType || campaign.redirect_type || 'lead';
 
     // Para campanhas de redirecionamento WhatsApp
     if (campaign.redirect_type === 'whatsapp') {
