@@ -47,6 +47,8 @@ export interface Lead {
   facebook_ad_id?: string;
   facebook_adset_id?: string;
   facebook_campaign_id?: string;
+  // 🆕 CAMPO USER_ID
+  user_id?: string;
 }
 
 export interface Campaign {
@@ -81,6 +83,8 @@ export interface Campaign {
   conversion_keywords?: string[];
   cancellation_keywords?: string[];
   created_at?: string;
+  // 🆕 CAMPO USER_ID
+  user_id?: string;
 }
 
 export interface Sale {

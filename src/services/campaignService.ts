@@ -1,4 +1,3 @@
-
 import { Campaign } from "../types";
 import { supabase } from "../integrations/supabase/client";
 
@@ -43,6 +42,7 @@ export const getCampaigns = async (): Promise<Campaign[]> => {
       data_processing_options: campaign.data_processing_options || [],
       data_processing_options_country: campaign.data_processing_options_country || 0,
       data_processing_options_state: campaign.data_processing_options_state || 0,
+      user_id: campaign.user_id,
     }));
   } catch (error) {
     console.error("Error fetching campaigns:", error);
@@ -54,6 +54,12 @@ export const addCampaign = async (
   campaign: Omit<Campaign, "id" | "created_at">
 ): Promise<Campaign> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error("User not authenticated");
+    }
+
     const { data, error } = await supabase
       .from("campaigns")
       .insert({
@@ -85,6 +91,7 @@ export const addCampaign = async (
         data_processing_options: campaign.data_processing_options,
         data_processing_options_country: campaign.data_processing_options_country,
         data_processing_options_state: campaign.data_processing_options_state,
+        user_id: user.id,
       })
       .select()
       .single();
@@ -123,6 +130,7 @@ export const addCampaign = async (
       data_processing_options: data.data_processing_options || [],
       data_processing_options_country: data.data_processing_options_country || 0,
       data_processing_options_state: data.data_processing_options_state || 0,
+      user_id: data.user_id,
     };
   } catch (error) {
     console.error("Error adding campaign:", error);
@@ -226,6 +234,7 @@ export const updateCampaign = async (
       data_processing_options: data.data_processing_options || [],
       data_processing_options_country: data.data_processing_options_country || 0,
       data_processing_options_state: data.data_processing_options_state || 0,
+      user_id: data.user_id,
     };
   } catch (error) {
     console.error("Error updating campaign:", error);

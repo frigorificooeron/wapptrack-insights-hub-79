@@ -14,12 +14,13 @@ export const getLeads = async (): Promise<Lead[]> => {
 
     if (error) throw error;
     
-    console.log('📋 leadService.getLeads() - Dados brutos do Supabase:', leads);
+    console.log('📋 leadService.getLeads() - Dados brutos do Supabase:', leads?.length || 0, 'leads encontrados');
     
     // Map database fields to our Lead interface - INCLUINDO novos campos do Facebook
     const mappedLeads = (leads || []).map(lead => {
       console.log(`🔍 leadService.getLeads() - Mapeando lead ${lead.name}:`, {
         id: lead.id,
+        user_id: lead.user_id,
         last_message: lead.last_message,
         device_type: lead.device_type,
         location: lead.location,
@@ -65,17 +66,12 @@ export const getLeads = async (): Promise<Lead[]> => {
         // 🎯 NOVOS CAMPOS DO FACEBOOK ADS
         facebook_ad_id: lead.facebook_ad_id || '',
         facebook_adset_id: lead.facebook_adset_id || '',
-        facebook_campaign_id: lead.facebook_campaign_id || ''
+        facebook_campaign_id: lead.facebook_campaign_id || '',
+        user_id: lead.user_id
       };
     });
     
-    console.log('✅ leadService.getLeads() - Leads mapeados com dados do Facebook:', mappedLeads.map(lead => ({
-      name: lead.name,
-      device_type: lead.device_type,
-      location: lead.location,
-      facebook_ad_id: lead.facebook_ad_id,
-      facebook_campaign_id: lead.facebook_campaign_id
-    })));
+    console.log('✅ leadService.getLeads() - Leads mapeados:', mappedLeads.length, 'leads processados');
     
     return mappedLeads;
   } catch (error) {
@@ -87,6 +83,12 @@ export const getLeads = async (): Promise<Lead[]> => {
 export const addLead = async (lead: Omit<Lead, 'id' | 'created_at'>): Promise<Lead> => {
   try {
     console.log('🔄 addLead - Iniciando criação de lead:', lead.name, lead.phone);
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error("User not authenticated");
+    }
     
     // 🎯 BUSCAR DADOS DO DISPOSITIVO SALVOS PARA ESTE TELEFONE (incluindo Facebook Ads)
     let deviceData = null;
@@ -145,12 +147,15 @@ export const addLead = async (lead: Omit<Lead, 'id' | 'created_at'>): Promise<Le
       // 🎯 INCLUIR DADOS DO FACEBOOK ADS SE DISPONÍVEIS
       facebook_ad_id: deviceData?.facebook_ad_id || lead.facebook_ad_id || '',
       facebook_adset_id: deviceData?.facebook_adset_id || lead.facebook_adset_id || '',
-      facebook_campaign_id: deviceData?.facebook_campaign_id || lead.facebook_campaign_id || ''
+      facebook_campaign_id: deviceData?.facebook_campaign_id || lead.facebook_campaign_id || '',
+      // 🆕 INCLUIR USER_ID
+      user_id: lead.user_id || user.id
     };
 
-    console.log('💾 Dados que serão inseridos no lead (com Facebook Ads):', {
+    console.log('💾 Dados que serão inseridos no lead (com user_id):', {
       nome: leadData.name,
       telefone: leadData.phone,
+      user_id: leadData.user_id,
       device_type: leadData.device_type,
       browser: leadData.browser,
       location: leadData.location,
@@ -170,9 +175,10 @@ export const addLead = async (lead: Omit<Lead, 'id' | 'created_at'>): Promise<Le
 
     if (error) throw error;
 
-    console.log('✅ Lead criado com sucesso com dados do Facebook Ads:', {
+    console.log('✅ Lead criado com sucesso com user_id:', {
       id: data.id,
       name: data.name,
+      user_id: data.user_id,
       device_type: data.device_type,
       location: data.location,
       facebook_ad_id: data.facebook_ad_id,
@@ -216,7 +222,8 @@ export const addLead = async (lead: Omit<Lead, 'id' | 'created_at'>): Promise<Le
       // 🎯 NOVOS CAMPOS DO FACEBOOK ADS
       facebook_ad_id: data.facebook_ad_id || '',
       facebook_adset_id: data.facebook_adset_id || '',
-      facebook_campaign_id: data.facebook_campaign_id || ''
+      facebook_campaign_id: data.facebook_campaign_id || '',
+      user_id: data.user_id
     };
   } catch (error) {
     console.error("Error adding lead:", error);
@@ -263,6 +270,7 @@ export const updateLead = async (id: string, lead: Partial<Lead>): Promise<Lead>
     if (lead.facebook_ad_id !== undefined) updateData.facebook_ad_id = lead.facebook_ad_id;
     if (lead.facebook_adset_id !== undefined) updateData.facebook_adset_id = lead.facebook_adset_id;
     if (lead.facebook_campaign_id !== undefined) updateData.facebook_campaign_id = lead.facebook_campaign_id;
+    if (lead.user_id !== undefined) updateData.user_id = lead.user_id;
 
     // Update lead in Supabase
     const { data, error } = await supabase
@@ -311,7 +319,8 @@ export const updateLead = async (id: string, lead: Partial<Lead>): Promise<Lead>
       // 🎯 NOVOS CAMPOS DO FACEBOOK ADS
       facebook_ad_id: data.facebook_ad_id || '',
       facebook_adset_id: data.facebook_adset_id || '',
-      facebook_campaign_id: data.facebook_campaign_id || ''
+      facebook_campaign_id: data.facebook_campaign_id || '',
+      user_id: data.user_id
     };
   } catch (error) {
     console.error("Error updating lead:", error);

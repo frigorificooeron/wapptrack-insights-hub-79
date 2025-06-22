@@ -36,6 +36,7 @@ export type Database = {
           test_event_code: string | null
           tracking_domain: string | null
           updated_at: string
+          user_id: string
           utm_campaign: string | null
           utm_content: string | null
           utm_medium: string | null
@@ -69,6 +70,7 @@ export type Database = {
           test_event_code?: string | null
           tracking_domain?: string | null
           updated_at?: string
+          user_id: string
           utm_campaign?: string | null
           utm_content?: string | null
           utm_medium?: string | null
@@ -102,6 +104,7 @@ export type Database = {
           test_event_code?: string | null
           tracking_domain?: string | null
           updated_at?: string
+          user_id?: string
           utm_campaign?: string | null
           utm_content?: string | null
           utm_medium?: string | null
@@ -181,6 +184,7 @@ export type Database = {
           timezone: string | null
           tracking_method: string | null
           updated_at: string
+          user_id: string
           utm_campaign: string | null
           utm_content: string | null
           utm_medium: string | null
@@ -224,6 +228,7 @@ export type Database = {
           timezone?: string | null
           tracking_method?: string | null
           updated_at?: string
+          user_id: string
           utm_campaign?: string | null
           utm_content?: string | null
           utm_medium?: string | null
@@ -267,6 +272,7 @@ export type Database = {
           timezone?: string | null
           tracking_method?: string | null
           updated_at?: string
+          user_id?: string
           utm_campaign?: string | null
           utm_content?: string | null
           utm_medium?: string | null
@@ -440,6 +446,10 @@ export type Database = {
           created_at: string
           expires_at: string
         }[]
+      }
+      get_user_by_instance: {
+        Args: { instance_name_param: string }
+        Returns: string
       }
     }
     Enums: {
