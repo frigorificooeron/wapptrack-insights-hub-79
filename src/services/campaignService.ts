@@ -17,11 +17,11 @@ export const getCampaigns = async (): Promise<Campaign[]> => {
       pixel_id: campaign.pixel_id || "",
       facebook_access_token: campaign.facebook_access_token || "",
       whatsapp_number: campaign.whatsapp_number || "",
-      event_type: campaign.event_type || "lead",
+      event_type: (campaign.event_type as "lead" | "contact" | "page_view" | "sale") || "lead",
       custom_message: campaign.custom_message || "",
       company_title: campaign.company_name || "",
       company_subtitle: campaign.company_subtitle || "",
-      logo_url: campaign.logo_url || "",
+      logo_url: "", // Logo is handled separately in company settings
       redirect_type: (campaign.redirect_type as "whatsapp" | "form") || "whatsapp",
       utm_source: campaign.utm_source || "",
       utm_medium: campaign.utm_medium || "",
@@ -97,11 +97,11 @@ export const addCampaign = async (
       pixel_id: data.pixel_id || "",
       facebook_access_token: data.facebook_access_token || "",
       whatsapp_number: data.whatsapp_number || "",
-      event_type: data.event_type || "lead",
+      event_type: (data.event_type as "lead" | "contact" | "page_view" | "sale") || "lead",
       custom_message: data.custom_message || "",
       company_title: data.company_name || "",
       company_subtitle: data.company_subtitle || "",
-      logo_url: data.logo_url || "",
+      logo_url: "", // Logo is handled separately in company settings
       redirect_type: (data.redirect_type as "whatsapp" | "form") || "whatsapp",
       utm_source: data.utm_source || "",
       utm_medium: data.utm_medium || "",
@@ -200,11 +200,11 @@ export const updateCampaign = async (
       pixel_id: data.pixel_id || "",
       facebook_access_token: data.facebook_access_token || "",
       whatsapp_number: data.whatsapp_number || "",
-      event_type: data.event_type || "lead",
+      event_type: (data.event_type as "lead" | "contact" | "page_view" | "sale") || "lead",
       custom_message: data.custom_message || "",
       company_title: data.company_name || "",
       company_subtitle: data.company_subtitle || "",
-      logo_url: data.logo_url || "",
+      logo_url: "", // Logo is handled separately in company settings
       redirect_type: (data.redirect_type as "whatsapp" | "form") || "whatsapp",
       utm_source: data.utm_source || "",
       utm_medium: data.utm_medium || "",
@@ -243,5 +243,3 @@ export const deleteCampaign = async (id: string): Promise<void> => {
     throw error;
   }
 };
-
-
