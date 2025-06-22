@@ -88,26 +88,10 @@ export const deactivateSharedToken = async (tokenId: string): Promise<boolean> =
 
 export const getUserSharedTokens = async (): Promise<SharedTokenData[]> => {
   try {
-    const { data, error } = await supabase
-      .from('shared_access_tokens')
-      .select('*')
-      .eq('is_active', true)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error getting user shared tokens:', error);
-      return [];
-    }
-
-    return (data || []).map(item => ({
-      id: item.id,
-      token: item.token,
-      permissions: item.permissions,
-      name: item.name,
-      description: item.description,
-      created_at: item.created_at,
-      expires_at: item.expires_at
-    }));
+    // Since shared_access_tokens table doesn't exist in current schema,
+    // we'll return an empty array for now
+    console.log('getUserSharedTokens: shared_access_tokens table not available in current schema');
+    return [];
   } catch (error) {
     console.error('Error in getUserSharedTokens:', error);
     return [];
