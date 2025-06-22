@@ -1,73 +1,128 @@
-# Welcome to your Lovable project
+# WappTrack Insights Hub
 
-## Project info
+Um sistema completo de gestão de leads e campanhas de WhatsApp com integração ao Supabase.
 
-**URL**: https://lovable.dev/projects/8971b3bd-e08b-4901-b0e7-c82f8a62ec6f
+## Funcionalidades
 
-## How can I edit this code?
+- 📊 Dashboard com métricas em tempo real
+- 👥 Gestão de leads e contactos
+- 📱 Campanhas de WhatsApp
+- 💰 Acompanhamento de vendas
+- ⚙️ Configurações personalizáveis
+- 🔐 Sistema de autenticação seguro
+- 🌐 Acesso partilhado com tokens
 
-There are several ways of editing your application.
+## Tecnologias Utilizadas
 
-**Use Lovable**
+- **Frontend**: React 18 + TypeScript + Vite
+- **UI**: Tailwind CSS + shadcn/ui
+- **Backend**: Supabase (Base de dados + Autenticação)
+- **Roteamento**: React Router DOM
+- **Estado**: React Query (TanStack Query)
+- **Formulários**: React Hook Form + Zod
+- **Gráficos**: Recharts
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/8971b3bd-e08b-4901-b0e7-c82f8a62ec6f) and start prompting.
+## Configuração do Ambiente
 
-Changes made via Lovable will be committed automatically to this repo.
+### Pré-requisitos
 
-**Use your preferred IDE**
+- Node.js 18+ ou Bun
+- Conta no Supabase
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Instalação
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+1. Clone o repositório:
+```bash
+git clone https://github.com/frigorificooeron/wapptrack-insights-hub-79.git
+cd wapptrack-insights-hub-79
 ```
 
-**Edit a file directly in GitHub**
+2. Instale as dependências:
+```bash
+# Com npm
+npm install
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+# Com bun (recomendado)
+bun install
+```
 
-**Use GitHub Codespaces**
+3. Configure as variáveis de ambiente:
+```bash
+# Copie o arquivo de exemplo
+cp .env.example .env.local
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+# Edite o arquivo .env.local com suas credenciais do Supabase
+VITE_SUPABASE_URL=sua_url_supabase
+VITE_SUPABASE_ANON_KEY=sua_chave_anon_supabase
+```
 
-## What technologies are used for this project?
+4. Inicie o servidor de desenvolvimento:
+```bash
+# Com npm
+npm run dev
 
-This project is built with:
+# Com bun
+bun run dev
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Scripts Disponíveis
 
-## How can I deploy this project?
+- `dev` - Inicia o servidor de desenvolvimento
+- `build` - Constrói a aplicação para produção
+- `build:dev` - Constrói a aplicação em modo desenvolvimento
+- `lint` - Executa o linter ESLint
+- `preview` - Visualiza a build de produção
 
-Simply open [Lovable](https://lovable.dev/projects/8971b3bd-e08b-4901-b0e7-c82f8a62ec6f) and click on Share -> Publish.
+## Estrutura do Projeto
 
-## Can I connect a custom domain to my Lovable project?
+```
+src/
+├── components/     # Componentes reutilizáveis
+├── context/        # Contextos React (Auth, SharedAccess)
+├── hooks/          # Hooks personalizados
+├── integrations/   # Integrações externas (Supabase)
+├── layouts/        # Layouts da aplicação
+├── lib/            # Utilitários e configurações
+├── pages/          # Páginas da aplicação
+├── services/       # Serviços e APIs
+└── types/          # Definições de tipos TypeScript
+```
 
-Yes, you can!
+## Funcionalidades de Segurança
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+- ✅ Variáveis de ambiente para credenciais sensíveis
+- ✅ Autenticação via Supabase
+- ✅ Rotas protegidas
+- ✅ Validação de formulários com Zod
+- ✅ Tokens de acesso partilhado
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## Deploy
+
+### Vercel (Recomendado)
+
+1. Conecte o repositório ao Vercel
+2. Configure as variáveis de ambiente no painel do Vercel
+3. Deploy automático a cada push
+
+### Outras Plataformas
+
+A aplicação é compatível com qualquer plataforma que suporte aplicações React estáticas:
+- Netlify
+- GitHub Pages
+- Firebase Hosting
+
+## Contribuição
+
+1. Faça um fork do projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/nova-feature`)
+3. Commit suas mudanças (`git commit -m 'Adiciona nova feature'`)
+4. Push para a branch (`git push origin feature/nova-feature`)
+5. Abra um Pull Request
+
+## Licença
+
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+
+## Suporte
+
+Para suporte, entre em contacto através do email: suporte@wapptrack.com
