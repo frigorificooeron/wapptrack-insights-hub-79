@@ -1,3 +1,4 @@
+
 import { Campaign } from "../types";
 import { supabase } from "../integrations/supabase/client";
 
@@ -18,6 +19,9 @@ export const getCampaigns = async (): Promise<Campaign[]> => {
       whatsapp_number: campaign.whatsapp_number || "",
       event_type: campaign.event_type || "lead",
       custom_message: campaign.custom_message || "",
+      company_title: campaign.company_name || "",
+      company_subtitle: campaign.company_subtitle || "",
+      logo_url: campaign.logo_url || "",
       redirect_type: (campaign.redirect_type as "whatsapp" | "form") || "whatsapp",
       utm_source: campaign.utm_source || "",
       utm_medium: campaign.utm_medium || "",
@@ -59,6 +63,8 @@ export const addCampaign = async (
         whatsapp_number: campaign.whatsapp_number,
         event_type: campaign.event_type,
         custom_message: campaign.custom_message,
+        company_name: campaign.company_title,
+        company_subtitle: campaign.company_subtitle,
         redirect_type: campaign.redirect_type,
         utm_source: campaign.utm_source,
         utm_medium: campaign.utm_medium,
@@ -93,6 +99,9 @@ export const addCampaign = async (
       whatsapp_number: data.whatsapp_number || "",
       event_type: data.event_type || "lead",
       custom_message: data.custom_message || "",
+      company_title: data.company_name || "",
+      company_subtitle: data.company_subtitle || "",
+      logo_url: data.logo_url || "",
       redirect_type: (data.redirect_type as "whatsapp" | "form") || "whatsapp",
       utm_source: data.utm_source || "",
       utm_medium: data.utm_medium || "",
@@ -135,6 +144,8 @@ export const updateCampaign = async (
       updateData.whatsapp_number = campaign.whatsapp_number;
     if (campaign.event_type !== undefined) updateData.event_type = campaign.event_type;
     if (campaign.custom_message !== undefined) updateData.custom_message = campaign.custom_message;
+    if (campaign.company_title !== undefined) updateData.company_name = campaign.company_title;
+    if (campaign.company_subtitle !== undefined) updateData.company_subtitle = campaign.company_subtitle;
     if (campaign.redirect_type !== undefined)
       updateData.redirect_type = campaign.redirect_type;
     if (campaign.utm_source !== undefined)
@@ -191,6 +202,9 @@ export const updateCampaign = async (
       whatsapp_number: data.whatsapp_number || "",
       event_type: data.event_type || "lead",
       custom_message: data.custom_message || "",
+      company_title: data.company_name || "",
+      company_subtitle: data.company_subtitle || "",
+      logo_url: data.logo_url || "",
       redirect_type: (data.redirect_type as "whatsapp" | "form") || "whatsapp",
       utm_source: data.utm_source || "",
       utm_medium: data.utm_medium || "",
