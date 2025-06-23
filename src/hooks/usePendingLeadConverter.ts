@@ -20,6 +20,12 @@ export const usePendingLeadConverter = () => {
         throw new Error('Pending lead not found');
       }
 
+      // Get current user ID
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       // Convert to regular lead
       const { error: insertError } = await supabase
         .from('leads')
@@ -29,6 +35,7 @@ export const usePendingLeadConverter = () => {
           campaign: pendingLead.campaign_name || 'Unknown',
           campaign_id: pendingLead.campaign_id,
           status: 'new',
+          user_id: user.id,
           utm_source: pendingLead.utm_source || '',
           utm_medium: pendingLead.utm_medium || '',
           utm_campaign: pendingLead.utm_campaign || '',
@@ -64,6 +71,12 @@ export const usePendingLeadConverter = () => {
   const convertPendingLeads = async () => {
     setIsConverting(true);
     try {
+      // Get current user ID
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       // Get all pending leads
       const { data: pendingLeads, error: fetchError } = await supabase
         .from('pending_leads')
@@ -93,6 +106,7 @@ export const usePendingLeadConverter = () => {
               campaign: pendingLead.campaign_name || 'Unknown',
               campaign_id: pendingLead.campaign_id,
               status: 'new',
+              user_id: user.id,
               utm_source: pendingLead.utm_source || '',
               utm_medium: pendingLead.utm_medium || '',
               utm_campaign: pendingLead.utm_campaign || '',

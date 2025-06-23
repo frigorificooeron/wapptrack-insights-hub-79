@@ -60,6 +60,13 @@ export const trackRedirect = async (
     if ((type === 'lead' || type === 'contact') && phone) {
       console.log('📝 [FORMULÁRIO] Processando campanha de formulário...');
       
+      // Get current user ID
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error('❌ [FORMULÁRIO] Usuário não autenticado');
+        return { targetPhone: campaign.whatsapp_number };
+      }
+      
       // Buscar dados do dispositivo para enriquecer o lead
       const deviceData = await getDeviceDataByPhone(phone);
       
@@ -68,6 +75,7 @@ export const trackRedirect = async (
         phone,
         campaign: campaign.name,
         status: 'new' as const,
+        user_id: user.id,
         utm_source: utms?.utm_source || '',
         utm_medium: utms?.utm_medium || '',
         utm_campaign: utms?.utm_campaign || '',
