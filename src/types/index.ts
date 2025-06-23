@@ -43,12 +43,20 @@ export interface Lead {
   screen_resolution?: string;
   timezone?: string;
   language?: string;
-  // 🎯 NOVOS CAMPOS DO FACEBOOK ADS
+  // 🎯 CAMPOS DO FACEBOOK ADS
   facebook_ad_id?: string;
   facebook_adset_id?: string;
   facebook_campaign_id?: string;
   // 🆕 CAMPO USER_ID
   user_id?: string;
+  // 🆕 CAMPOS EXPANDIDOS UTM
+  site_source_name?: string;
+  adset_name?: string;
+  campaign_name?: string;
+  ad_name_expanded?: string;
+  placement?: string;
+  gclid?: string;
+  fbclid?: string;
 }
 
 export interface Campaign {
@@ -99,6 +107,19 @@ export interface Sale {
   status?: 'confirmed' | 'pending' | 'cancelled'; // Add status field
   created_at: string;
   updated_at: string;
+  // 🆕 CAMPOS PARA PRESERVAR DADOS DO LEAD
+  custom_fields?: Record<string, any>;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_content?: string;
+  utm_term?: string;
+  ad_account?: string;
+  ad_set_name?: string;
+  ad_name?: string;
+  tracking_method?: string;
+  device_type?: string;
+  location?: string;
 }
 
 export type CompanySettings = {

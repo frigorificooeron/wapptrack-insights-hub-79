@@ -11,19 +11,32 @@ export const getSales = async (): Promise<Sale[]> => {
 
     if (error) throw error;
 
-    // Fix: Properly cast status to the expected literal type
+    // 🆕 MAPEAR DADOS EXPANDIDOS DAS VENDAS
     return (sales || []).map(sale => ({
       id: sale.id,
       value: sale.amount || 0,
       date: sale.sale_date || sale.created_at,
       lead_name: '', // This needs to be populated from leads table if needed
-      campaign: '', // This needs to be populated from campaigns table if needed
+      campaign: sale.campaign_id || '',
       product: '',
       notes: sale.notes || '',
       lead_id: sale.lead_id || '',
       status: (sale.status as 'confirmed' | 'pending' | 'cancelled') || 'confirmed',
       created_at: sale.created_at,
-      updated_at: sale.updated_at
+      updated_at: sale.updated_at,
+      // 🆕 INCLUIR CAMPOS PRESERVADOS DO LEAD
+      custom_fields: sale.custom_fields || {},
+      utm_source: sale.custom_fields?.lead_data?.utm_source || '',
+      utm_medium: sale.custom_fields?.lead_data?.utm_medium || '',
+      utm_campaign: sale.custom_fields?.lead_data?.utm_campaign || '',
+      utm_content: sale.custom_fields?.lead_data?.utm_content || '',
+      utm_term: sale.custom_fields?.lead_data?.utm_term || '',
+      ad_account: sale.custom_fields?.lead_data?.ad_account || '',
+      ad_set_name: sale.custom_fields?.lead_data?.ad_set_name || '',
+      ad_name: sale.custom_fields?.lead_data?.ad_name || '',
+      tracking_method: sale.custom_fields?.lead_data?.tracking_method || '',
+      device_type: sale.custom_fields?.lead_data?.device_type || '',
+      location: sale.custom_fields?.lead_data?.location || ''
     }));
   } catch (error) {
     console.error("Error fetching sales:", error);
@@ -33,16 +46,23 @@ export const getSales = async (): Promise<Sale[]> => {
 
 export const addSale = async (sale: Omit<Sale, 'id' | 'created_at' | 'updated_at'>): Promise<Sale> => {
   try {
+    // 🆕 PREPARAR DADOS COM CAMPOS EXPANDIDOS
+    const saleData = {
+      amount: sale.value,
+      sale_date: sale.date,
+      status: sale.status || 'confirmed',
+      notes: sale.notes,
+      lead_id: sale.lead_id || null,
+      campaign_id: sale.campaign || null,
+      // 🆕 PRESERVAR CUSTOM_FIELDS COM DADOS DO LEAD
+      custom_fields: sale.custom_fields || {}
+    };
+
+    console.log('💾 [SALE SERVICE] Criando venda com dados expandidos:', saleData);
+
     const { data, error } = await supabase
       .from('sales')
-      .insert({
-        amount: sale.value,
-        sale_date: sale.date,
-        status: sale.status || 'confirmed',
-        notes: sale.notes,
-        lead_id: sale.lead_id || null,
-        campaign_id: sale.campaign || null
-      })
+      .insert(saleData)
       .select()
       .single();
 
@@ -59,7 +79,20 @@ export const addSale = async (sale: Omit<Sale, 'id' | 'created_at' | 'updated_at
       lead_id: data.lead_id,
       status: (data.status as 'confirmed' | 'pending' | 'cancelled') || 'confirmed',
       created_at: data.created_at,
-      updated_at: data.updated_at
+      updated_at: data.updated_at,
+      // 🆕 INCLUIR CAMPOS PRESERVADOS
+      custom_fields: data.custom_fields || {},
+      utm_source: sale.utm_source || '',
+      utm_medium: sale.utm_medium || '',
+      utm_campaign: sale.utm_campaign || '',
+      utm_content: sale.utm_content || '',
+      utm_term: sale.utm_term || '',
+      ad_account: sale.ad_account || '',
+      ad_set_name: sale.ad_set_name || '',
+      ad_name: sale.ad_name || '',
+      tracking_method: sale.tracking_method || '',
+      device_type: sale.device_type || '',
+      location: sale.location || ''
     };
   } catch (error) {
     console.error("Error adding sale:", error);

@@ -77,12 +77,15 @@ export const handlePendingLeadConversion = async (supabase: any, phone: string, 
     }
 
     if (existingLead && existingLead.length > 0) {
-      console.log('📝 Lead existente encontrado, atualizando...');
+      console.log('📝 Lead existente encontrado, atualizando status para "lead"...');
       
       const updateData: any = {
+        status: 'lead', // 🆕 ATUALIZAR STATUS PARA "LEAD" QUANDO RECEBER MENSAGEM
         last_contact_date: new Date().toISOString(),
         evolution_message_id: messageId,
         evolution_status: status,
+        last_message: messageText,
+        initial_message: `Primeira mensagem: ${messageText}`
       };
       
       // Adicionar dados do dispositivo se disponíveis
@@ -91,12 +94,6 @@ export const handlePendingLeadConversion = async (supabase: any, phone: string, 
           ...existingLead[0].custom_fields,
           device_info: deviceData
         };
-      }
-      
-      // ✅ SALVAR MENSAGEM PERSONALIZADA NO CAMPO CORRETO
-      if (!existingLead[0].last_message || existingLead[0].last_message.trim() === '') {
-        updateData.last_message = messageText;
-        updateData.initial_message = `Mensagem personalizada: ${messageText}`;
       }
 
       const { error: updateError } = await supabase
@@ -107,35 +104,63 @@ export const handlePendingLeadConversion = async (supabase: any, phone: string, 
       if (updateError) {
         console.error('❌ Erro ao atualizar lead existente:', updateError);
       } else {
-        console.log('✅ Lead existente atualizado com mensagem personalizada');
+        console.log('✅ Lead existente atualizado para status "lead" com mensagem');
       }
     } else {
       console.log('🆕 Criando novo lead a partir do pending_lead...');
       
-      // ✅ CRIAR NOVO LEAD COM USER_ID DA CAMPANHA E MENSAGEM PERSONALIZADA
+      // 🆕 EXTRAIR DADOS UTM EXPANDIDOS DO WEBHOOK_DATA
+      const webhookData = pendingLead.webhook_data || {};
+      
+      // ✅ CRIAR NOVO LEAD COM STATUS "LEAD" E DADOS EXPANDIDOS
       const newLeadData = {
         name: finalName,
         phone: phone,
         campaign: pendingLead.campaign_name || 'WhatsApp',
         campaign_id: pendingLead.campaign_id,
         user_id: campaignUserId,
-        status: 'lead',
+        status: 'lead', // 🆕 STATUS "LEAD" QUANDO CRIAR A PARTIR DE MENSAGEM
         last_message: messageText,
-        initial_message: `Mensagem personalizada: ${messageText}`,
+        initial_message: `Primeira mensagem: ${messageText}`,
         first_contact_date: new Date().toISOString(),
         last_contact_date: new Date().toISOString(),
         evolution_message_id: messageId,
         evolution_status: status,
-        notes: 'Lead criado automaticamente via WhatsApp a partir de formulário',
+        notes: 'Lead criado automaticamente via WhatsApp',
         utm_source: pendingLead.utm_source,
         utm_medium: pendingLead.utm_medium,
         utm_campaign: pendingLead.utm_campaign,
         utm_content: pendingLead.utm_content,
         utm_term: pendingLead.utm_term,
-        custom_fields: deviceData ? { device_info: deviceData } : null
+        // 🆕 DADOS EXPANDIDOS UTM E DISPOSITIVO
+        ad_account: webhookData.site_source_name || '',
+        ad_set_name: webhookData.adset_name || '',
+        ad_name: webhookData.ad_name || '',
+        tracking_method: webhookData.placement || 'whatsapp_direct',
+        // Dados do dispositivo se disponíveis
+        ...(deviceData && {
+          location: deviceData.location,
+          ip_address: deviceData.ip_address,
+          browser: deviceData.browser,
+          os: deviceData.os,
+          device_type: deviceData.device_type,
+          device_model: deviceData.device_model,
+          country: deviceData.country,
+          city: deviceData.city,
+          screen_resolution: deviceData.screen_resolution,
+          timezone: deviceData.timezone,
+          language: deviceData.language,
+          facebook_ad_id: deviceData.facebook_ad_id,
+          facebook_adset_id: deviceData.facebook_adset_id,
+          facebook_campaign_id: deviceData.facebook_campaign_id
+        }),
+        custom_fields: deviceData ? { 
+          device_info: deviceData,
+          utm_expanded: webhookData
+        } : { utm_expanded: webhookData }
       };
 
-      console.log('💾 Dados do novo lead (com mensagem personalizada):', newLeadData);
+      console.log('💾 Dados do novo lead (com dados expandidos):', newLeadData);
 
       const { error: insertError } = await supabase
         .from('leads')
@@ -144,7 +169,7 @@ export const handlePendingLeadConversion = async (supabase: any, phone: string, 
       if (insertError) {
         console.error('❌ Erro ao criar novo lead:', insertError);
       } else {
-        console.log('✅ Novo lead criado com mensagem personalizada salva!');
+        console.log('✅ Novo lead criado com status "lead" e dados expandidos!');
       }
     }
 

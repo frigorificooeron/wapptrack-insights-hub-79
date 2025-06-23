@@ -18,6 +18,11 @@ export const trackRedirect = async (
     utm_term?: string
     gclid?: string
     fbclid?: string
+    site_source_name?: string
+    adset_name?: string
+    campaign_name?: string
+    ad_name?: string
+    placement?: string
   }
 ): Promise<{targetPhone?: string}> => {
   try {
@@ -42,21 +47,23 @@ export const trackRedirect = async (
       return { targetPhone: '5585998372658' };
     }
 
-    // Use the campaign's redirect_type, not event_type
     const type = eventType || campaign.redirect_type || 'lead';
 
-    // Para campanhas de redirecionamento WhatsApp
+    // Para campanhas de redirecionamento WhatsApp direto
     if (campaign.redirect_type === 'whatsapp') {
-      console.log(`🚦 Campanha de redirecionamento WhatsApp`, {
+      console.log(`🚦 Campanha de redirecionamento WhatsApp direto`, {
         id: campaign.id,
         name: campaign.name,
         utms
       });
       
+      // 🆕 MODO DIRETO: Criar pending_lead que será convertido quando receber mensagem
+      await createPendingLead(campaignId, phone, name || 'Visitante', campaign.name, utms);
+      
       return { targetPhone: campaign.whatsapp_number };
     }
 
-    // Para campanhas de formulário, criar lead diretamente
+    // Para campanhas de formulário, criar lead imediatamente
     if ((type === 'lead' || type === 'contact') && phone) {
       console.log('📝 [FORMULÁRIO] Processando campanha de formulário...');
       
@@ -74,13 +81,18 @@ export const trackRedirect = async (
         name: name || 'Lead via Tracking',
         phone,
         campaign: campaign.name,
-        status: 'new' as const,
+        status: 'new' as const, // 🆕 Status inicial "new" até receber mensagem
         user_id: user.id,
         utm_source: utms?.utm_source || '',
         utm_medium: utms?.utm_medium || '',
         utm_campaign: utms?.utm_campaign || '',
         utm_content: utms?.utm_content || (utms?.gclid ? `gclid=${utms.gclid}` : '') || '',
         utm_term: utms?.utm_term || (utms?.fbclid ? `fbclid=${utms.fbclid}` : '') || '',
+        // 🆕 NOVOS CAMPOS UTM E DISPOSITIVO EXPANDIDOS
+        ad_account: utms?.site_source_name || '',
+        ad_set_name: utms?.adset_name || '',
+        ad_name: utms?.ad_name || '',
+        tracking_method: utms?.placement || 'form',
         // Incluir dados do dispositivo se disponíveis
         ...(deviceData && {
           location: deviceData.location,
@@ -117,5 +129,55 @@ export const trackRedirect = async (
   } catch (error) {
     console.error('❌ [TRACK REDIRECT] Erro geral:', error);
     return { targetPhone: '5585998372658' };
+  }
+};
+
+/**
+ * 🆕 Criar pending lead para modo direto
+ */
+const createPendingLead = async (
+  campaignId: string,
+  phone: string,
+  name: string,
+  campaignName: string,
+  utms?: any
+) => {
+  try {
+    const pendingLeadData = {
+      campaign_id: campaignId,
+      campaign_name: campaignName,
+      name,
+      phone,
+      status: 'pending',
+      utm_source: utms?.utm_source || '',
+      utm_medium: utms?.utm_medium || '',
+      utm_campaign: utms?.utm_campaign || '',
+      utm_content: utms?.utm_content || (utms?.gclid ? `gclid=${utms.gclid}` : '') || '',
+      utm_term: utms?.utm_term || (utms?.fbclid ? `fbclid=${utms.fbclid}` : '') || '',
+      // 🆕 DADOS EXPANDIDOS UTM
+      webhook_data: {
+        site_source_name: utms?.site_source_name,
+        adset_name: utms?.adset_name,
+        campaign_name: utms?.campaign_name,
+        ad_name: utms?.ad_name,
+        placement: utms?.placement,
+        gclid: utms?.gclid,
+        fbclid: utms?.fbclid
+      }
+    };
+
+    console.log('📋 [PENDING LEAD] Criando pending lead para modo direto:', pendingLeadData);
+
+    const { error } = await supabase
+      .from('pending_leads')
+      .insert(pendingLeadData);
+
+    if (error) {
+      console.error('❌ [PENDING LEAD] Erro ao criar pending lead:', error);
+    } else {
+      console.log('✅ [PENDING LEAD] Pending lead criado com sucesso');
+    }
+  } catch (error) {
+    console.error('❌ [PENDING LEAD] Erro geral:', error);
   }
 };
