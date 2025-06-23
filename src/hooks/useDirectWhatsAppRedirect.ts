@@ -1,3 +1,4 @@
+
 import { toast } from 'sonner';
 import { Campaign } from '@/types';
 import { useEnhancedPixelTracking } from './useEnhancedPixelTracking';
@@ -96,9 +97,9 @@ export const useDirectWhatsAppRedirect = (
           // 🆕 DADOS EXPANDIDOS UTM E FACEBOOK
           webhook_data: {
             site_source_name: currentUtms.site_source_name,
-            adset_name: currentUtms.adset_id, // Mapear para adset_name
-            campaign_name: currentUtms.campaign_id, // Mapear para campaign_name
-            ad_name: currentUtms.ad_id, // Mapear para ad_name
+            adset_name: currentUtms.adset_id,
+            campaign_name: currentUtms.campaign_id,
+            ad_name: currentUtms.ad_id,
             placement: currentUtms.placement,
             gclid: currentUtms.gclid,
             fbclid: currentUtms.fbclid,
@@ -121,49 +122,49 @@ export const useDirectWhatsAppRedirect = (
 
         console.log('✅ [DIRECT WHATSAPP] Pending_lead criado com sucesso');
 
-        // Pega o número de destino do WhatsApp
-        const targetPhone = campaignData.whatsapp_number;
-
-        if (!targetPhone) {
-          console.warn('⚠️ [DIRECT WHATSAPP] Número de WhatsApp não configurado para esta campanha');
-          toast.error('Número de WhatsApp não configurado para esta campanha');
-          throw new Error('Número de WhatsApp não configurado');
-        }
-
-        // Monta a URL do WhatsApp com mensagem personalizada
-        let whatsappUrl = `https://wa.me/${targetPhone}`;
-
-        if (campaignData.custom_message) {
-          const encodedMessage = encodeURIComponent(campaignData.custom_message);
-          whatsappUrl += `?text=${encodedMessage}`;
-        }
-
-        console.log('↗️ [DIRECT WHATSAPP] Redirecting to WhatsApp with URL:', whatsappUrl);
-
-        toast.success('Redirecionando para o WhatsApp...');
-        window.location.href = whatsappUrl;
-        console.log('✅ [DIRECT WHATSAPP] WhatsApp redirect initiated successfully');
-        
       } catch (trackError) {
-        console.error('❌ [DIRECT WHATSAPP] Erro ao processar redirecionamento direto:', trackError);
-        toast.error('Erro ao processar redirecionamento, mas continuando...');
-        
-        // Continua com o redirecionamento mesmo se houver erro no tracking
-        const targetPhone = campaignData.whatsapp_number;
-        if (targetPhone) {
-          let whatsappUrl = `https://wa.me/${targetPhone}`;
-          if (campaignData.custom_message) {
-            const encodedMessage = encodeURIComponent(campaignData.custom_message);
-            whatsappUrl += `?text=${encodedMessage}`;
-          }
-          window.location.href = whatsappUrl;
-        }
+        console.error('❌ [DIRECT WHATSAPP] Erro ao processar pending_lead:', trackError);
+        // Continuar mesmo com erro para não bloquear o redirecionamento
       }
+
+      // Pega o número de destino do WhatsApp
+      const targetPhone = campaignData.whatsapp_number;
+
+      if (!targetPhone) {
+        console.warn('⚠️ [DIRECT WHATSAPP] Número de WhatsApp não configurado para esta campanha');
+        toast.error('Número de WhatsApp não configurado para esta campanha');
+        throw new Error('Número de WhatsApp não configurado');
+      }
+
+      // Monta a URL do WhatsApp com mensagem personalizada
+      let whatsappUrl = `https://wa.me/${targetPhone}`;
+
+      if (campaignData.custom_message) {
+        const encodedMessage = encodeURIComponent(campaignData.custom_message);
+        whatsappUrl += `?text=${encodedMessage}`;
+      }
+
+      console.log('↗️ [DIRECT WHATSAPP] Redirecting to WhatsApp with URL:', whatsappUrl);
+
+      toast.success('Redirecionando para o WhatsApp...');
+      
+      // Garantir que o redirecionamento aconteça
+      setTimeout(() => {
+        window.location.href = whatsappUrl;
+      }, 1000);
+      
+      console.log('✅ [DIRECT WHATSAPP] WhatsApp redirect initiated successfully');
 
     } catch (err) {
       console.error('❌ [DIRECT WHATSAPP] Error in direct WhatsApp redirect:', err);
       toast.error('Erro ao processar redirecionamento direto');
-      throw new Error('Erro ao processar redirecionamento direto');
+      
+      // Tentar redirecionamento mesmo com erro
+      if (campaignData.whatsapp_number) {
+        setTimeout(() => {
+          window.location.href = `https://wa.me/${campaignData.whatsapp_number}`;
+        }, 1000);
+      }
     }
   };
 

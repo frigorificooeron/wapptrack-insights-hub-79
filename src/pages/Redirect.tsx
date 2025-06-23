@@ -36,7 +36,7 @@ const Redirect = () => {
         !redirectExecuted.current) {
       
       redirectExecuted.current = true;
-      console.log('Starting direct WhatsApp redirect for campaign:', campaign.name);
+      console.log('🚀 [REDIRECT] Starting direct WhatsApp redirect for campaign:', campaign.name);
       setShowLoadingScreen(true);
       
       // Start loading animation
@@ -50,9 +50,10 @@ const Redirect = () => {
       setTimeout(async () => {
         clearInterval(interval);
         try {
+          console.log('🔄 [REDIRECT] Executing direct WhatsApp redirect...');
           await handleDirectWhatsAppRedirect(campaign);
         } catch (err) {
-          console.error('Error in direct redirect:', err);
+          console.error('❌ [REDIRECT] Error in direct redirect:', err);
           setShowLoadingScreen(false);
           redirectExecuted.current = false;
         }
@@ -63,10 +64,10 @@ const Redirect = () => {
   const onFormSubmit = async (phone: string, name: string) => {
     setLoading(true);
     try {
+      console.log('📝 [REDIRECT] Form submission initiated for:', { phone, name, campaignId });
       await handleFormSubmit(phone, name);
     } catch (err) {
-      console.error('Error in form submit:', err);
-    } finally {
+      console.error('❌ [REDIRECT] Error in form submit:', err);
       setLoading(false);
     }
   };

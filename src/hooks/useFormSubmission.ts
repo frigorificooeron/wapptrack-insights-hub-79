@@ -1,5 +1,5 @@
 
-import { trackRedirect, updateLead } from '@/services/dataService';
+import { trackRedirect } from '@/services/trackingService';
 import { toast } from 'sonner';
 import { sendWebhookData } from '@/services/webhookService';
 import { Lead } from '@/types';
@@ -24,6 +24,8 @@ export const useFormSubmission = (
         last_whatsapp_attempt: new Date().toISOString()
       };
       
+      // Importar dinamicamente para evitar dependência circular
+      const { updateLead } = await import('@/services/leadService');
       await updateLead(leadId, updateData);
       console.log(`✅ [FORM SUBMISSION] Lead status updated to: ${status}`);
     } catch (error) {
@@ -128,14 +130,13 @@ export const useFormSubmission = (
           utm_campaign: utms.utm_campaign,
           utm_content: utms.utm_content,
           utm_term: utms.utm_term,
-          // 🆕 INCLUIR PARÂMETROS EXPANDIDOS
-          site_source_name: utms.site_source_name,
-          adset_name: utms.adset_id, // Mapear adset_id para adset_name
-          campaign_name: utms.campaign_id, // Mapear campaign_id para campaign_name
-          ad_name: utms.ad_id, // Mapear ad_id para ad_name
-          placement: utms.placement,
           gclid: utms.gclid,
-          fbclid: utms.fbclid
+          fbclid: utms.fbclid,
+          site_source_name: utms.site_source_name,
+          adset_name: utms.adset_id,
+          campaign_name: utms.campaign_id,
+          ad_name: utms.ad_id,
+          placement: utms.placement
         }
       );
       
@@ -167,11 +168,24 @@ export const useFormSubmission = (
       console.log('↗️ [FORM SUBMISSION] Redirecting to WhatsApp with URL:', whatsappUrl);
       
       toast.success('Lead salvo! Redirecionando para o WhatsApp...');
-      window.location.href = whatsappUrl;
+      
+      // Garantir que o redirecionamento aconteça
+      setTimeout(() => {
+        window.location.href = whatsappUrl;
+      }, 1500);
       
       console.log('✅ [FORM SUBMISSION] WhatsApp redirect initiated');
     } catch (error) {
       console.error('❌ [FORM SUBMISSION] Error in trackRedirect or WhatsApp redirect:', error);
+      toast.error('Erro ao processar redirecionamento. Tentando novamente...');
+      
+      // Fallback: tentar redirecionamento direto
+      if (campaign?.whatsapp_number) {
+        setTimeout(() => {
+          window.location.href = `https://wa.me/${campaign.whatsapp_number}`;
+        }, 1000);
+      }
+      
       throw new Error('Erro ao processar redirecionamento');
     }
   };
