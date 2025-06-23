@@ -338,6 +338,7 @@ export type Database = {
           amount: number
           campaign_id: string | null
           created_at: string
+          custom_fields: Json | null
           id: string
           lead_id: string | null
           notes: string | null
@@ -349,6 +350,7 @@ export type Database = {
           amount: number
           campaign_id?: string | null
           created_at?: string
+          custom_fields?: Json | null
           id?: string
           lead_id?: string | null
           notes?: string | null
@@ -360,6 +362,7 @@ export type Database = {
           amount?: number
           campaign_id?: string | null
           created_at?: string
+          custom_fields?: Json | null
           id?: string
           lead_id?: string | null
           notes?: string | null

@@ -109,6 +109,7 @@ export const updateSale = async (id: string, sale: Partial<Sale>): Promise<Sale>
     if (sale.notes !== undefined) updateData.notes = sale.notes;
     if (sale.lead_id !== undefined) updateData.lead_id = sale.lead_id;
     if (sale.campaign !== undefined) updateData.campaign_id = sale.campaign;
+    if (sale.custom_fields !== undefined) updateData.custom_fields = sale.custom_fields;
 
     const { data, error } = await supabase
       .from('sales')
@@ -130,7 +131,19 @@ export const updateSale = async (id: string, sale: Partial<Sale>): Promise<Sale>
       lead_id: data.lead_id,
       status: (data.status as 'confirmed' | 'pending' | 'cancelled') || 'confirmed',
       created_at: data.created_at,
-      updated_at: data.updated_at
+      updated_at: data.updated_at,
+      custom_fields: data.custom_fields || {},
+      utm_source: data.custom_fields?.lead_data?.utm_source || '',
+      utm_medium: data.custom_fields?.lead_data?.utm_medium || '',
+      utm_campaign: data.custom_fields?.lead_data?.utm_campaign || '',
+      utm_content: data.custom_fields?.lead_data?.utm_content || '',
+      utm_term: data.custom_fields?.lead_data?.utm_term || '',
+      ad_account: data.custom_fields?.lead_data?.ad_account || '',
+      ad_set_name: data.custom_fields?.lead_data?.ad_set_name || '',
+      ad_name: data.custom_fields?.lead_data?.ad_name || '',
+      tracking_method: data.custom_fields?.lead_data?.tracking_method || '',
+      device_type: data.custom_fields?.lead_data?.device_type || '',
+      location: data.custom_fields?.lead_data?.location || ''
     };
   } catch (error) {
     console.error("Error updating sale:", error);
