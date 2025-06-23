@@ -1,4 +1,3 @@
-
 import { toast } from 'sonner';
 import { Campaign } from '@/types';
 import { useEnhancedPixelTracking } from './useEnhancedPixelTracking';
@@ -12,6 +11,16 @@ type UTMVars = {
   utm_campaign?: string;
   utm_content?: string;
   utm_term?: string;
+  fbclid?: string;
+  gclid?: string;
+  site_source_name?: string;
+  adset_id?: string;
+  campaign_id?: string;
+  ad_id?: string;
+  placement?: string;
+  facebook_ad_id?: string;
+  facebook_adset_id?: string;
+  facebook_campaign_id?: string;
 };
 
 export const useDirectWhatsAppRedirect = (
