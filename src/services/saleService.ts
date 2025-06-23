@@ -12,32 +12,43 @@ export const getSales = async (): Promise<Sale[]> => {
     if (error) throw error;
 
     // 🆕 MAPEAR DADOS EXPANDIDOS DAS VENDAS
-    return (sales || []).map(sale => ({
-      id: sale.id,
-      value: sale.amount || 0,
-      date: sale.sale_date || sale.created_at,
-      lead_name: '', // This needs to be populated from leads table if needed
-      campaign: sale.campaign_id || '',
-      product: '',
-      notes: sale.notes || '',
-      lead_id: sale.lead_id || '',
-      status: (sale.status as 'confirmed' | 'pending' | 'cancelled') || 'confirmed',
-      created_at: sale.created_at,
-      updated_at: sale.updated_at,
-      // 🆕 INCLUIR CAMPOS PRESERVADOS DO LEAD
-      custom_fields: sale.custom_fields || {},
-      utm_source: sale.custom_fields?.lead_data?.utm_source || '',
-      utm_medium: sale.custom_fields?.lead_data?.utm_medium || '',
-      utm_campaign: sale.custom_fields?.lead_data?.utm_campaign || '',
-      utm_content: sale.custom_fields?.lead_data?.utm_content || '',
-      utm_term: sale.custom_fields?.lead_data?.utm_term || '',
-      ad_account: sale.custom_fields?.lead_data?.ad_account || '',
-      ad_set_name: sale.custom_fields?.lead_data?.ad_set_name || '',
-      ad_name: sale.custom_fields?.lead_data?.ad_name || '',
-      tracking_method: sale.custom_fields?.lead_data?.tracking_method || '',
-      device_type: sale.custom_fields?.lead_data?.device_type || '',
-      location: sale.custom_fields?.lead_data?.location || ''
-    }));
+    return (sales || []).map(sale => {
+      // Type guard for custom_fields
+      const customFields = sale.custom_fields && typeof sale.custom_fields === 'object' 
+        ? sale.custom_fields as Record<string, any>
+        : {};
+      
+      const leadData = customFields.lead_data && typeof customFields.lead_data === 'object'
+        ? customFields.lead_data as Record<string, any>
+        : {};
+
+      return {
+        id: sale.id,
+        value: sale.amount || 0,
+        date: sale.sale_date || sale.created_at,
+        lead_name: '', // This needs to be populated from leads table if needed
+        campaign: sale.campaign_id || '',
+        product: '',
+        notes: sale.notes || '',
+        lead_id: sale.lead_id || '',
+        status: (sale.status as 'confirmed' | 'pending' | 'cancelled') || 'confirmed',
+        created_at: sale.created_at,
+        updated_at: sale.updated_at,
+        // 🆕 INCLUIR CAMPOS PRESERVADOS DO LEAD
+        custom_fields: customFields,
+        utm_source: leadData.utm_source || '',
+        utm_medium: leadData.utm_medium || '',
+        utm_campaign: leadData.utm_campaign || '',
+        utm_content: leadData.utm_content || '',
+        utm_term: leadData.utm_term || '',
+        ad_account: leadData.ad_account || '',
+        ad_set_name: leadData.ad_set_name || '',
+        ad_name: leadData.ad_name || '',
+        tracking_method: leadData.tracking_method || '',
+        device_type: leadData.device_type || '',
+        location: leadData.location || ''
+      };
+    });
   } catch (error) {
     console.error("Error fetching sales:", error);
     return [];
@@ -68,6 +79,11 @@ export const addSale = async (sale: Omit<Sale, 'id' | 'created_at' | 'updated_at
 
     if (error) throw error;
 
+    // Type guard for custom_fields from response
+    const customFields = data.custom_fields && typeof data.custom_fields === 'object' 
+      ? data.custom_fields as Record<string, any>
+      : {};
+
     return {
       id: data.id,
       value: data.amount,
@@ -81,7 +97,7 @@ export const addSale = async (sale: Omit<Sale, 'id' | 'created_at' | 'updated_at
       created_at: data.created_at,
       updated_at: data.updated_at,
       // 🆕 INCLUIR CAMPOS PRESERVADOS
-      custom_fields: data.custom_fields || {},
+      custom_fields: customFields,
       utm_source: sale.utm_source || '',
       utm_medium: sale.utm_medium || '',
       utm_campaign: sale.utm_campaign || '',
@@ -120,6 +136,15 @@ export const updateSale = async (id: string, sale: Partial<Sale>): Promise<Sale>
 
     if (error) throw error;
 
+    // Type guard for custom_fields from response
+    const customFields = data.custom_fields && typeof data.custom_fields === 'object' 
+      ? data.custom_fields as Record<string, any>
+      : {};
+    
+    const leadData = customFields.lead_data && typeof customFields.lead_data === 'object'
+      ? customFields.lead_data as Record<string, any>
+      : {};
+
     return {
       id: data.id,
       value: data.amount,
@@ -132,18 +157,18 @@ export const updateSale = async (id: string, sale: Partial<Sale>): Promise<Sale>
       status: (data.status as 'confirmed' | 'pending' | 'cancelled') || 'confirmed',
       created_at: data.created_at,
       updated_at: data.updated_at,
-      custom_fields: data.custom_fields || {},
-      utm_source: data.custom_fields?.lead_data?.utm_source || '',
-      utm_medium: data.custom_fields?.lead_data?.utm_medium || '',
-      utm_campaign: data.custom_fields?.lead_data?.utm_campaign || '',
-      utm_content: data.custom_fields?.lead_data?.utm_content || '',
-      utm_term: data.custom_fields?.lead_data?.utm_term || '',
-      ad_account: data.custom_fields?.lead_data?.ad_account || '',
-      ad_set_name: data.custom_fields?.lead_data?.ad_set_name || '',
-      ad_name: data.custom_fields?.lead_data?.ad_name || '',
-      tracking_method: data.custom_fields?.lead_data?.tracking_method || '',
-      device_type: data.custom_fields?.lead_data?.device_type || '',
-      location: data.custom_fields?.lead_data?.location || ''
+      custom_fields: customFields,
+      utm_source: leadData.utm_source || '',
+      utm_medium: leadData.utm_medium || '',
+      utm_campaign: leadData.utm_campaign || '',
+      utm_content: leadData.utm_content || '',
+      utm_term: leadData.utm_term || '',
+      ad_account: leadData.ad_account || '',
+      ad_set_name: leadData.ad_set_name || '',
+      ad_name: leadData.ad_name || '',
+      tracking_method: leadData.tracking_method || '',
+      device_type: leadData.device_type || '',
+      location: leadData.location || ''
     };
   } catch (error) {
     console.error("Error updating sale:", error);
