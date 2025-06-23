@@ -21,6 +21,10 @@ export interface UrlParameters {
   facebook_ad_id?: string;
   facebook_adset_id?: string;
   facebook_campaign_id?: string;
+  // 🆕 NOVOS PARÂMETROS EXPANDIDOS
+  adset_name?: string;
+  campaign_name?: string;
+  ad_name?: string;
 }
 
 export interface DeviceData {
@@ -117,7 +121,7 @@ export interface FacebookData {
   };
 }
 
-// URL Parameter Collection
+// URL Parameter Collection - EXPANDIDA
 export const collectUrlParameters = (): UrlParameters => {
   const params = new URLSearchParams(window.location.search);
   const hash = window.location.hash.substring(1);
@@ -126,6 +130,12 @@ export const collectUrlParameters = (): UrlParameters => {
   const allParams = new URLSearchParams();
   params.forEach((value, key) => allParams.set(key, value));
   hashParams.forEach((value, key) => allParams.set(key, value));
+  
+  console.log('🌐 [DATA COLLECTION] Parâmetros de URL coletados:', {
+    search: window.location.search,
+    hash: window.location.hash,
+    allParams: Object.fromEntries(allParams.entries())
+  });
   
   return {
     utm_source: allParams.get('utm_source') || undefined,
@@ -149,6 +159,10 @@ export const collectUrlParameters = (): UrlParameters => {
     facebook_ad_id: allParams.get('facebook_ad_id') || undefined,
     facebook_adset_id: allParams.get('facebook_adset_id') || undefined,
     facebook_campaign_id: allParams.get('facebook_campaign_id') || undefined,
+    // 🆕 PARÂMETROS EXPANDIDOS
+    adset_name: allParams.get('adset_name') || allParams.get('adset_id') || undefined,
+    campaign_name: allParams.get('campaign_name') || allParams.get('campaign_id') || undefined,
+    ad_name: allParams.get('ad_name') || allParams.get('ad_id') || undefined,
   };
 };
 
@@ -382,10 +396,10 @@ export const collectGeolocationData = (): Promise<GeolocationData> => {
   });
 };
 
-// Nova função para integrar com o sistema de device_data
+// Nova função para integrar com o sistema de device_data - APRIMORADA
 export const captureAndSaveDeviceData = async (phone?: string) => {
   try {
-    console.log('📱 Capturando dados do dispositivo...');
+    console.log('📱 [DATA COLLECTION] Capturando dados do dispositivo...');
     
     // Coletar todos os dados disponíveis
     const urlParams = collectUrlParameters();
@@ -402,7 +416,7 @@ export const captureAndSaveDeviceData = async (phone?: string) => {
     try {
       locationData = await collectGeolocationData();
     } catch (error) {
-      console.warn('Não foi possível obter dados de geolocalização:', error);
+      console.warn('[DATA COLLECTION] Não foi possível obter dados de geolocalização:', error);
     }
 
     // 🎯 PRIORIZAR PARÂMETROS CORRETOS (sem prefixo primeiro, depois com prefixo)
@@ -410,7 +424,7 @@ export const captureAndSaveDeviceData = async (phone?: string) => {
     const getFacebookAdsetId = () => urlParams.adset_id || urlParams.facebook_adset_id;
     const getFacebookCampaignId = () => urlParams.campaign_id || urlParams.facebook_campaign_id;
 
-    // 🎯 INCLUIR TODOS OS PARÂMETROS NOS UTMs SALVOS
+    // 🎯 INCLUIR TODOS OS PARÂMETROS EXPANDIDOS NOS UTMs SALVOS
     const urlParamsString = [
       urlParams.utm_source ? `utm_source=${urlParams.utm_source}` : '',
       urlParams.utm_medium ? `utm_medium=${urlParams.utm_medium}` : '',
@@ -422,9 +436,14 @@ export const captureAndSaveDeviceData = async (phone?: string) => {
       getFacebookAdId() ? `ad_id=${getFacebookAdId()}` : '',
       getFacebookAdsetId() ? `adset_id=${getFacebookAdsetId()}` : '',
       getFacebookCampaignId() ? `campaign_id=${getFacebookCampaignId()}` : '',
+      urlParams.site_source_name ? `site_source_name=${urlParams.site_source_name}` : '',
+      urlParams.placement ? `placement=${urlParams.placement}` : '',
+      urlParams.adset_name ? `adset_name=${urlParams.adset_name}` : '',
+      urlParams.campaign_name ? `campaign_name=${urlParams.campaign_name}` : '',
+      urlParams.ad_name ? `ad_name=${urlParams.ad_name}` : '',
     ].filter(Boolean).join(', ');
 
-    // Montar objeto completo para salvar
+    // Montar objeto completo para salvar - EXPANDIDO
     const completeDeviceData = {
       phone,
       ip_address: 'Detectando...', // Será obtido via API externa
@@ -445,19 +464,30 @@ export const captureAndSaveDeviceData = async (phone?: string) => {
       utm_campaign: urlParams.utm_campaign,
       utm_content: urlParams.utm_content || (urlParams.gclid ? `gclid=${urlParams.gclid}` : undefined),
       utm_term: urlParams.utm_term || (urlParams.fbclid ? `fbclid=${urlParams.fbclid}` : undefined),
-      // 🎯 INCLUIR PARÂMETROS DO FACEBOOK ADS (PRIORIZANDO FORMATO CORRETO)
+      // 🎯 INCLUIR PARÂMETROS EXPANDIDOS DO FACEBOOK ADS
       facebook_ad_id: getFacebookAdId(),
       facebook_adset_id: getFacebookAdsetId(),
-      facebook_campaign_id: getFacebookCampaignId()
+      facebook_campaign_id: getFacebookCampaignId(),
+      // 🆕 PARÂMETROS ADICIONAIS
+      site_source_name: urlParams.site_source_name,
+      placement: urlParams.placement,
+      adset_name: urlParams.adset_name,
+      campaign_name: urlParams.campaign_name,
+      ad_name: urlParams.ad_name
     };
 
-    console.log('📱 Dados do dispositivo coletados com parâmetros Facebook (ambos formatos):', {
+    console.log('📱 [DATA COLLECTION] Dados do dispositivo coletados com parâmetros expandidos:', {
       ad_id: getFacebookAdId(),
       facebook_ad_id: urlParams.facebook_ad_id,
       adset_id: getFacebookAdsetId(),
       facebook_adset_id: urlParams.facebook_adset_id,
       campaign_id: getFacebookCampaignId(),
       facebook_campaign_id: urlParams.facebook_campaign_id,
+      site_source_name: urlParams.site_source_name,
+      placement: urlParams.placement,
+      adset_name: urlParams.adset_name,
+      campaign_name: urlParams.campaign_name,
+      ad_name: urlParams.ad_name,
       phone: completeDeviceData.phone
     });
     
@@ -466,14 +496,14 @@ export const captureAndSaveDeviceData = async (phone?: string) => {
     
     try {
       const result = await saveDeviceData(completeDeviceData);
-      console.log('✅ Dados do dispositivo salvos com sucesso:', result);
+      console.log('✅ [DATA COLLECTION] Dados do dispositivo salvos com sucesso:', result);
     } catch (error) {
-      console.error('❌ Erro ao salvar dados do dispositivo:', error);
+      console.error('❌ [DATA COLLECTION] Erro ao salvar dados do dispositivo:', error);
     }
     
     return completeDeviceData;
   } catch (error) {
-    console.error('❌ Erro ao capturar e salvar dados do dispositivo:', error);
+    console.error('❌ [DATA COLLECTION] Erro ao capturar e salvar dados do dispositivo:', error);
     return null;
   }
 };

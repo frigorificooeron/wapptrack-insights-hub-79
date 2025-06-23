@@ -3,7 +3,7 @@ import { supabase } from "../integrations/supabase/client";
 import { getDeviceDataByPhone } from "./deviceDataService";
 
 /**
- * Função principal para rastrear redirecionamentos e salvar leads
+ * Função principal para rastrear redirecionamentos e salvar leads - CORRIGIDA
  */
 export const trackRedirect = async (
   campaignId: string, 
@@ -26,7 +26,7 @@ export const trackRedirect = async (
   }
 ): Promise<{targetPhone?: string}> => {
   try {
-    console.log('➡️ [TRACK REDIRECT] Iniciado com parâmetros:', {
+    console.log('➡️ [TRACK REDIRECT] Iniciado com parâmetros expandidos:', {
       campaignId,
       phone,
       name,
@@ -43,36 +43,42 @@ export const trackRedirect = async (
 
     // Campanha não encontrada -> fallback default
     if (campaignError || !campaign) {
-      console.log(`❌ Campaign with ID ${campaignId} not found. Creating default lead.`);
+      console.log(`❌ [TRACK REDIRECT] Campaign with ID ${campaignId} not found. Creating default lead.`);
       return { targetPhone: '5585998372658' };
     }
 
+    console.log('✅ [TRACK REDIRECT] Campanha encontrada:', {
+      id: campaign.id,
+      name: campaign.name,
+      redirect_type: campaign.redirect_type,
+      user_id: campaign.user_id
+    });
+
     const type = eventType || campaign.redirect_type || 'lead';
 
-    // Para campanhas de redirecionamento WhatsApp direto
+    // Para campanhas de redirecionamento WhatsApp direto (NÃO DEVERIA CHEGAR AQUI)
     if (campaign.redirect_type === 'whatsapp') {
-      console.log(`🚦 Campanha de redirecionamento WhatsApp direto`, {
+      console.log(`🚦 [TRACK REDIRECT] Campanha de redirecionamento WhatsApp direto - NÃO DEVERIA CHEGAR AQUI`, {
         id: campaign.id,
         name: campaign.name,
         utms
       });
-      
-      // 🆕 MODO DIRETO: Criar pending_lead que será convertido quando receber mensagem
-      await createPendingLead(campaignId, phone, name || 'Visitante', campaign.name, utms);
       
       return { targetPhone: campaign.whatsapp_number };
     }
 
     // Para campanhas de formulário, criar lead imediatamente
     if ((type === 'lead' || type === 'contact') && phone) {
-      console.log('📝 [FORMULÁRIO] Processando campanha de formulário...');
+      console.log('📝 [TRACK REDIRECT] Processando campanha de formulário...');
       
-      // Get current user ID
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        console.error('❌ [FORMULÁRIO] Usuário não autenticado');
+      // ✅ USAR USER_ID DA CAMPANHA (NÃO PRECISA DE AUTH AQUI)
+      const campaignUserId = campaign.user_id;
+      if (!campaignUserId) {
+        console.error('❌ [TRACK REDIRECT] user_id não encontrado na campanha');
         return { targetPhone: campaign.whatsapp_number };
       }
+
+      console.log('✅ [TRACK REDIRECT] user_id da campanha:', campaignUserId);
       
       // Buscar dados do dispositivo para enriquecer o lead
       const deviceData = await getDeviceDataByPhone(phone);
@@ -81,8 +87,9 @@ export const trackRedirect = async (
         name: name || 'Lead via Tracking',
         phone,
         campaign: campaign.name,
+        campaign_id: campaignId,
         status: 'new' as const, // 🆕 Status inicial "new" até receber mensagem
-        user_id: user.id,
+        user_id: campaignUserId, // ✅ USAR USER_ID DA CAMPANHA
         utm_source: utms?.utm_source || '',
         utm_medium: utms?.utm_medium || '',
         utm_campaign: utms?.utm_campaign || '',
@@ -112,16 +119,27 @@ export const trackRedirect = async (
         })
       };
       
-      console.log('📝 [FORMULÁRIO] Criando lead:', leadData);
+      console.log('📝 [TRACK REDIRECT] Criando lead com dados expandidos:', {
+        name: leadData.name,
+        phone: leadData.phone,
+        user_id: leadData.user_id,
+        campaign_id: leadData.campaign_id,
+        utm_source: leadData.utm_source,
+        ad_account: leadData.ad_account,
+        ad_set_name: leadData.ad_set_name,
+        ad_name: leadData.ad_name,
+        facebook_ad_id: leadData.facebook_ad_id,
+        tem_dados_dispositivo: !!deviceData
+      });
 
       const { error: leadError } = await supabase
         .from('leads')
         .insert(leadData);
 
       if (leadError) {
-        console.error('❌ [FORMULÁRIO] Erro ao criar lead:', leadError);
+        console.error('❌ [TRACK REDIRECT] Erro ao criar lead:', leadError);
       } else {
-        console.log('✅ [FORMULÁRIO] Lead criado com sucesso');
+        console.log('✅ [TRACK REDIRECT] Lead criado com sucesso');
       }
     }
 
@@ -129,55 +147,5 @@ export const trackRedirect = async (
   } catch (error) {
     console.error('❌ [TRACK REDIRECT] Erro geral:', error);
     return { targetPhone: '5585998372658' };
-  }
-};
-
-/**
- * 🆕 Criar pending lead para modo direto
- */
-const createPendingLead = async (
-  campaignId: string,
-  phone: string,
-  name: string,
-  campaignName: string,
-  utms?: any
-) => {
-  try {
-    const pendingLeadData = {
-      campaign_id: campaignId,
-      campaign_name: campaignName,
-      name,
-      phone,
-      status: 'pending',
-      utm_source: utms?.utm_source || '',
-      utm_medium: utms?.utm_medium || '',
-      utm_campaign: utms?.utm_campaign || '',
-      utm_content: utms?.utm_content || (utms?.gclid ? `gclid=${utms.gclid}` : '') || '',
-      utm_term: utms?.utm_term || (utms?.fbclid ? `fbclid=${utms.fbclid}` : '') || '',
-      // 🆕 DADOS EXPANDIDOS UTM
-      webhook_data: {
-        site_source_name: utms?.site_source_name,
-        adset_name: utms?.adset_name,
-        campaign_name: utms?.campaign_name,
-        ad_name: utms?.ad_name,
-        placement: utms?.placement,
-        gclid: utms?.gclid,
-        fbclid: utms?.fbclid
-      }
-    };
-
-    console.log('📋 [PENDING LEAD] Criando pending lead para modo direto:', pendingLeadData);
-
-    const { error } = await supabase
-      .from('pending_leads')
-      .insert(pendingLeadData);
-
-    if (error) {
-      console.error('❌ [PENDING LEAD] Erro ao criar pending lead:', error);
-    } else {
-      console.log('✅ [PENDING LEAD] Pending lead criado com sucesso');
-    }
-  } catch (error) {
-    console.error('❌ [PENDING LEAD] Erro geral:', error);
   }
 };
