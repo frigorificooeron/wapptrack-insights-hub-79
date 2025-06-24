@@ -36,7 +36,7 @@ const Redirect = () => {
         !redirectExecuted.current) {
       
       redirectExecuted.current = true;
-      console.log('🚀 [REDIRECT] Starting direct WhatsApp redirect for campaign:', campaign.name);
+      console.log('🚀 [REDIRECT] Iniciando redirecionamento WhatsApp direto para campanha:', campaign.name);
       setShowLoadingScreen(true);
       
       // Start loading animation
@@ -50,10 +50,10 @@ const Redirect = () => {
       setTimeout(async () => {
         clearInterval(interval);
         try {
-          console.log('🔄 [REDIRECT] Executing direct WhatsApp redirect...');
+          console.log('🔄 [REDIRECT] Executando redirecionamento WhatsApp direto...');
           await handleDirectWhatsAppRedirect(campaign);
         } catch (err) {
-          console.error('❌ [REDIRECT] Error in direct redirect:', err);
+          console.error('❌ [REDIRECT] Erro no redirecionamento direto:', err);
           setShowLoadingScreen(false);
           redirectExecuted.current = false;
         }
@@ -62,12 +62,13 @@ const Redirect = () => {
   }, [campaign, isLoading, handleDirectWhatsAppRedirect]);
 
   const onFormSubmit = async (phone: string, name: string) => {
+    console.log('📝 [REDIRECT] Envio de formulário iniciado para:', { phone, name, campaignId });
     setLoading(true);
     try {
-      console.log('📝 [REDIRECT] Form submission initiated for:', { phone, name, campaignId });
       await handleFormSubmit(phone, name);
+      console.log('✅ [REDIRECT] Formulário processado com sucesso');
     } catch (err) {
-      console.error('❌ [REDIRECT] Error in form submit:', err);
+      console.error('❌ [REDIRECT] Erro no envio do formulário:', err);
       setLoading(false);
     }
   };

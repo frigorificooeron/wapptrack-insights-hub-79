@@ -19,10 +19,13 @@ export const trackRedirect = async (
     gclid?: string
     fbclid?: string
     site_source_name?: string
-    adset_name?: string
-    campaign_name?: string
-    ad_name?: string
+    adset_id?: string
+    campaign_id?: string
+    ad_id?: string
     placement?: string
+    facebook_ad_id?: string
+    facebook_adset_id?: string
+    facebook_campaign_id?: string
   }
 ): Promise<{targetPhone?: string}> => {
   try {
@@ -43,15 +46,16 @@ export const trackRedirect = async (
 
     // Campanha não encontrada -> fallback default
     if (campaignError || !campaign) {
-      console.log(`❌ [TRACK REDIRECT] Campaign with ID ${campaignId} not found. Creating default lead.`);
-      return { targetPhone: '5585998372658' };
+      console.error(`❌ [TRACK REDIRECT] Campanha com ID ${campaignId} não encontrada:`, campaignError);
+      throw new Error(`Campanha não encontrada: ${campaignId}`);
     }
 
     console.log('✅ [TRACK REDIRECT] Campanha encontrada:', {
       id: campaign.id,
       name: campaign.name,
       redirect_type: campaign.redirect_type,
-      user_id: campaign.user_id
+      user_id: campaign.user_id,
+      whatsapp_number: campaign.whatsapp_number
     });
 
     const type = eventType || campaign.redirect_type || 'lead';
@@ -71,11 +75,11 @@ export const trackRedirect = async (
     if ((type === 'lead' || type === 'contact') && phone) {
       console.log('📝 [TRACK REDIRECT] Processando campanha de formulário...');
       
-      // ✅ USAR USER_ID DA CAMPANHA (NÃO PRECISA DE AUTH AQUI)
+      // ✅ USAR USER_ID DA CAMPANHA
       const campaignUserId = campaign.user_id;
       if (!campaignUserId) {
         console.error('❌ [TRACK REDIRECT] user_id não encontrado na campanha');
-        return { targetPhone: campaign.whatsapp_number };
+        throw new Error('user_id não encontrado na campanha');
       }
 
       console.log('✅ [TRACK REDIRECT] user_id da campanha:', campaignUserId);
@@ -88,17 +92,17 @@ export const trackRedirect = async (
         phone,
         campaign: campaign.name,
         campaign_id: campaignId,
-        status: 'new' as const, // 🆕 Status inicial "new" até receber mensagem
+        status: 'new' as const, // Status inicial "new" até receber mensagem
         user_id: campaignUserId, // ✅ USAR USER_ID DA CAMPANHA
         utm_source: utms?.utm_source || '',
         utm_medium: utms?.utm_medium || '',
         utm_campaign: utms?.utm_campaign || '',
-        utm_content: utms?.utm_content || (utms?.gclid ? `gclid=${utms.gclid}` : '') || '',
-        utm_term: utms?.utm_term || (utms?.fbclid ? `fbclid=${utms.fbclid}` : '') || '',
-        // 🆕 NOVOS CAMPOS UTM E DISPOSITIVO EXPANDIDOS
+        utm_content: utms?.utm_content || '',
+        utm_term: utms?.utm_term || '',
+        // Novos campos UTM e dispositivo expandidos
         ad_account: utms?.site_source_name || '',
-        ad_set_name: utms?.adset_name || '',
-        ad_name: utms?.ad_name || '',
+        ad_set_name: utms?.adset_id || '',
+        ad_name: utms?.ad_id || '',
         tracking_method: utms?.placement || 'form',
         // Incluir dados do dispositivo se disponíveis
         ...(deviceData && {
@@ -113,9 +117,9 @@ export const trackRedirect = async (
           screen_resolution: deviceData.screen_resolution,
           timezone: deviceData.timezone,
           language: deviceData.language,
-          facebook_ad_id: deviceData.facebook_ad_id,
-          facebook_adset_id: deviceData.facebook_adset_id,
-          facebook_campaign_id: deviceData.facebook_campaign_id
+          facebook_ad_id: deviceData.facebook_ad_id || utms?.facebook_ad_id,
+          facebook_adset_id: deviceData.facebook_adset_id || utms?.facebook_adset_id,
+          facebook_campaign_id: deviceData.facebook_campaign_id || utms?.facebook_campaign_id
         })
       };
       
@@ -132,20 +136,23 @@ export const trackRedirect = async (
         tem_dados_dispositivo: !!deviceData
       });
 
-      const { error: leadError } = await supabase
+      const { data: createdLead, error: leadError } = await supabase
         .from('leads')
-        .insert(leadData);
+        .insert(leadData)
+        .select()
+        .single();
 
       if (leadError) {
         console.error('❌ [TRACK REDIRECT] Erro ao criar lead:', leadError);
+        throw leadError;
       } else {
-        console.log('✅ [TRACK REDIRECT] Lead criado com sucesso');
+        console.log('✅ [TRACK REDIRECT] Lead criado com sucesso:', createdLead.id);
       }
     }
 
     return { targetPhone: campaign.whatsapp_number };
   } catch (error) {
     console.error('❌ [TRACK REDIRECT] Erro geral:', error);
-    return { targetPhone: '5585998372658' };
+    throw error;
   }
 };

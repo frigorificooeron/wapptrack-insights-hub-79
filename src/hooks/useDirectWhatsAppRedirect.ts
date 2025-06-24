@@ -37,49 +37,25 @@ export const useDirectWhatsAppRedirect = (
     }
   ) => {
     try {
-      console.log('🔄 [DIRECT WHATSAPP] Processing direct WhatsApp redirect for campaign:', campaignData.name, {
+      console.log('🔄 [DIRECT WHATSAPP] Iniciando redirecionamento direto para campanha:', campaignData.name, {
         campaignId,
         phone: options?.phone,
         name: options?.name,
         utms: options?.utms
       });
 
-      // Inicializa tracking avançado se necessário
-      if (campaignData.event_type && pixelInitialized) {
-        try {
-          const { trackEnhancedCustomEvent } = useEnhancedPixelTracking(campaignData);
-
-          console.log('📊 [DIRECT WHATSAPP] Tracking enhanced event before redirect:', campaignData.event_type);
-
-          await trackEnhancedCustomEvent(campaignData.event_type, {
-            redirect_type: 'direct_whatsapp',
-            campaign_name: campaignData.name
-          });
-          console.log('✅ [DIRECT WHATSAPP] Enhanced event tracked successfully');
-        } catch (trackingError) {
-          console.warn('⚠️ [DIRECT WHATSAPP] Enhanced tracking failed, continuing with redirect:', trackingError);
-        }
+      // Verificar se o número do WhatsApp está configurado
+      if (!campaignData.whatsapp_number) {
+        console.error('❌ [DIRECT WHATSAPP] Número de WhatsApp não configurado para esta campanha');
+        toast.error('Número de WhatsApp não configurado para esta campanha');
+        return;
       }
 
       // ✅ COLETA UTMs DA URL ATUAL SE NÃO FORAM FORNECIDOS
       const currentUtms = options?.utms || collectUrlParameters();
-      console.log('🌐 [DIRECT WHATSAPP] UTMs para redirecionamento direto:', currentUtms);
+      console.log('🌐 [DIRECT WHATSAPP] UTMs coletados:', currentUtms);
 
-      // 🆕 SALVAR DADOS DE TRACKING COM IDENTIFICADORES ÚNICOS
-      try {
-        const trackingResult = await saveTrackingData(currentUtms, campaignId!);
-        if (trackingResult.success) {
-          console.log('✅ [DIRECT WHATSAPP] Dados de tracking salvos:', {
-            session_id: trackingResult.session_id,
-            browser_fingerprint: trackingResult.browser_fingerprint,
-            campaign_id: campaignId
-          });
-        }
-      } catch (trackingError) {
-        console.warn('⚠️ [DIRECT WHATSAPP] Erro ao salvar tracking data, continuando...:', trackingError);
-      }
-
-      // 🆕 CRIAR PENDING_LEAD DIRETAMENTE (SEM TELEFONE AINDA)
+      // 🆕 CRIAR PENDING_LEAD DIRETAMENTE
       try {
         console.log('📋 [DIRECT WHATSAPP] Criando pending_lead para modo direto...');
         
@@ -92,9 +68,8 @@ export const useDirectWhatsAppRedirect = (
           utm_source: currentUtms.utm_source || '',
           utm_medium: currentUtms.utm_medium || '',
           utm_campaign: currentUtms.utm_campaign || '',
-          utm_content: currentUtms.utm_content || (currentUtms.gclid ? `gclid=${currentUtms.gclid}` : '') || '',
-          utm_term: currentUtms.utm_term || (currentUtms.fbclid ? `fbclid=${currentUtms.fbclid}` : '') || '',
-          // 🆕 DADOS EXPANDIDOS UTM E FACEBOOK
+          utm_content: currentUtms.utm_content || '',
+          utm_term: currentUtms.utm_term || '',
           webhook_data: {
             site_source_name: currentUtms.site_source_name,
             adset_name: currentUtms.adset_id,
@@ -111,59 +86,77 @@ export const useDirectWhatsAppRedirect = (
 
         console.log('💾 [DIRECT WHATSAPP] Dados do pending_lead:', pendingLeadData);
 
-        const { error: pendingError } = await supabase
+        const { data, error: pendingError } = await supabase
           .from('pending_leads')
-          .insert(pendingLeadData);
+          .insert(pendingLeadData)
+          .select()
+          .single();
 
         if (pendingError) {
           console.error('❌ [DIRECT WHATSAPP] Erro ao criar pending_lead:', pendingError);
           throw pendingError;
         }
 
-        console.log('✅ [DIRECT WHATSAPP] Pending_lead criado com sucesso');
+        console.log('✅ [DIRECT WHATSAPP] Pending_lead criado com sucesso:', data.id);
 
       } catch (trackError) {
         console.error('❌ [DIRECT WHATSAPP] Erro ao processar pending_lead:', trackError);
         // Continuar mesmo com erro para não bloquear o redirecionamento
       }
 
-      // Pega o número de destino do WhatsApp
-      const targetPhone = campaignData.whatsapp_number;
+      // 🆕 SALVAR DADOS DE TRACKING COM IDENTIFICADORES ÚNICOS
+      try {
+        const trackingResult = await saveTrackingData(currentUtms, campaignId!);
+        if (trackingResult.success) {
+          console.log('✅ [DIRECT WHATSAPP] Dados de tracking salvos:', {
+            session_id: trackingResult.session_id,
+            browser_fingerprint: trackingResult.browser_fingerprint,
+            campaign_id: campaignId
+          });
+        }
+      } catch (trackingError) {
+        console.warn('⚠️ [DIRECT WHATSAPP] Erro ao salvar tracking data, continuando...:', trackingError);
+      }
 
-      if (!targetPhone) {
-        console.warn('⚠️ [DIRECT WHATSAPP] Número de WhatsApp não configurado para esta campanha');
-        toast.error('Número de WhatsApp não configurado para esta campanha');
-        throw new Error('Número de WhatsApp não configurado');
+      // Tracking avançado se necessário
+      if (campaignData.event_type && pixelInitialized) {
+        try {
+          const { trackEnhancedCustomEvent } = useEnhancedPixelTracking(campaignData);
+          console.log('📊 [DIRECT WHATSAPP] Executando tracking avançado:', campaignData.event_type);
+          await trackEnhancedCustomEvent(campaignData.event_type, {
+            redirect_type: 'direct_whatsapp',
+            campaign_name: campaignData.name
+          });
+          console.log('✅ [DIRECT WHATSAPP] Tracking avançado executado com sucesso');
+        } catch (trackingError) {
+          console.warn('⚠️ [DIRECT WHATSAPP] Tracking avançado falhou, continuando com redirecionamento:', trackingError);
+        }
       }
 
       // Monta a URL do WhatsApp com mensagem personalizada
-      let whatsappUrl = `https://wa.me/${targetPhone}`;
+      let whatsappUrl = `https://wa.me/${campaignData.whatsapp_number}`;
 
       if (campaignData.custom_message) {
         const encodedMessage = encodeURIComponent(campaignData.custom_message);
         whatsappUrl += `?text=${encodedMessage}`;
       }
 
-      console.log('↗️ [DIRECT WHATSAPP] Redirecting to WhatsApp with URL:', whatsappUrl);
+      console.log('↗️ [DIRECT WHATSAPP] Redirecionando para WhatsApp:', whatsappUrl);
 
       toast.success('Redirecionando para o WhatsApp...');
       
       // Garantir que o redirecionamento aconteça
-      setTimeout(() => {
-        window.location.href = whatsappUrl;
-      }, 1000);
+      window.location.href = whatsappUrl;
       
-      console.log('✅ [DIRECT WHATSAPP] WhatsApp redirect initiated successfully');
+      console.log('✅ [DIRECT WHATSAPP] Redirecionamento WhatsApp iniciado com sucesso');
 
     } catch (err) {
-      console.error('❌ [DIRECT WHATSAPP] Error in direct WhatsApp redirect:', err);
+      console.error('❌ [DIRECT WHATSAPP] Erro no redirecionamento direto:', err);
       toast.error('Erro ao processar redirecionamento direto');
       
       // Tentar redirecionamento mesmo com erro
       if (campaignData.whatsapp_number) {
-        setTimeout(() => {
-          window.location.href = `https://wa.me/${campaignData.whatsapp_number}`;
-        }, 1000);
+        window.location.href = `https://wa.me/${campaignData.whatsapp_number}`;
       }
     }
   };

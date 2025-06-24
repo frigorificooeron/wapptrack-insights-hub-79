@@ -24,7 +24,6 @@ export const useFormSubmission = (
         last_whatsapp_attempt: new Date().toISOString()
       };
       
-      // Importar dinamicamente para evitar dependência circular
       const { updateLead } = await import('@/services/leadService');
       await updateLead(leadId, updateData);
       console.log(`✅ [FORM SUBMISSION] Lead status updated to: ${status}`);
@@ -36,125 +35,102 @@ export const useFormSubmission = (
   const handleFormSubmit = async (phone: string, name: string, email?: string) => {
     if (!campaignId) {
       console.error('❌ [FORM SUBMISSION] ID da campanha não encontrado');
+      toast.error('Erro: ID da campanha não encontrado');
       throw new Error('ID da campanha não encontrado');
     }
 
-    console.log('📝 [FORM SUBMISSION] Processing form submission...', {
+    if (!campaign) {
+      console.error('❌ [FORM SUBMISSION] Dados da campanha não encontrados');
+      toast.error('Erro: Dados da campanha não encontrados');
+      throw new Error('Dados da campanha não encontrados');
+    }
+
+    console.log('📝 [FORM SUBMISSION] Processando envio do formulário...', {
       campaignId,
       phone,
       name,
-      campaign: campaign?.name
+      campaign: campaign.name
     });
 
     // ✅ VERIFICAR AUTENTICAÇÃO DO USUÁRIO
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       console.error('❌ [FORM SUBMISSION] Usuário não autenticado:', authError);
+      toast.error('Erro: Usuário não autenticado');
       throw new Error('Usuário não autenticado');
     }
 
     console.log('✅ [FORM SUBMISSION] Usuário autenticado:', user.id);
 
-    // Track enhanced lead event BEFORE processing
-    if (campaign && trackEnhancedLead) {
-      try {
-        console.log('📊 [FORM SUBMISSION] Tracking enhanced lead event...');
-        await trackEnhancedLead({
-          name,
-          phone,
-          email,
-          value: 100
-        });
-        console.log('✅ [FORM SUBMISSION] Enhanced lead tracking completed');
-      } catch (trackingError) {
-        console.warn('⚠️ [FORM SUBMISSION] Enhanced lead tracking failed, continuing with form processing:', trackingError);
-      }
+    // Verificar se o número do WhatsApp está configurado
+    if (!campaign.whatsapp_number) {
+      console.error('❌ [FORM SUBMISSION] Número de WhatsApp não configurado para esta campanha');
+      toast.error('Número de WhatsApp não configurado para esta campanha');
+      throw new Error('Número de WhatsApp não configurado');
     }
 
-    // Send data via external webhook if configured
     try {
-      const webhookConfig = localStorage.getItem('webhook_config');
-      if (webhookConfig) {
-        const config = JSON.parse(webhookConfig);
-        if (config.webhook_url) {
-          const webhookData = {
-            campaign_id: campaignId,
-            campaign_name: campaign?.name,
-            lead_name: name,
-            lead_phone: phone,
-            lead_email: email,
-            timestamp: new Date().toISOString(),
-            event_type: campaign?.event_type,
-            user_id: user.id
-          };
-          
-          await sendWebhookData(config.webhook_url, webhookData);
-          console.log('✅ [FORM SUBMISSION] Data sent via external webhook successfully');
+      // Track enhanced lead event BEFORE processing
+      if (campaign && trackEnhancedLead) {
+        try {
+          console.log('📊 [FORM SUBMISSION] Executando tracking avançado de lead...');
+          await trackEnhancedLead({
+            name,
+            phone,
+            email,
+            value: 100
+          });
+          console.log('✅ [FORM SUBMISSION] Tracking avançado de lead concluído');
+        } catch (trackingError) {
+          console.warn('⚠️ [FORM SUBMISSION] Tracking avançado falhou, continuando com processamento:', trackingError);
         }
       }
-    } catch (error) {
-      console.error('❌ [FORM SUBMISSION] Error sending data via external webhook:', error);
-    }
 
-    // 🎯 COLETA UTMs E PARÂMETROS EXPANDIDOS ATUALIZADOS
-    const utms = collectUrlParameters();
-    console.log('🌐 [FORM SUBMISSION] UTMs e parâmetros expandidos obtidos da URL:', {
-      utm_source: utms.utm_source,
-      utm_medium: utms.utm_medium,
-      utm_campaign: utms.utm_campaign,
-      utm_content: utms.utm_content,
-      utm_term: utms.utm_term,
-      site_source_name: utms.site_source_name,
-      ad_id: utms.ad_id,
-      adset_id: utms.adset_id,
-      campaign_id: utms.campaign_id,
-      placement: utms.placement,
-      gclid: utms.gclid,
-      fbclid: utms.fbclid,
-      facebook_ad_id: utms.facebook_ad_id,
-      facebook_adset_id: utms.facebook_adset_id,
-      facebook_campaign_id: utms.facebook_campaign_id
-    });
+      // Send data via external webhook if configured
+      try {
+        const webhookConfig = localStorage.getItem('webhook_config');
+        if (webhookConfig) {
+          const config = JSON.parse(webhookConfig);
+          if (config.webhook_url) {
+            const webhookData = {
+              campaign_id: campaignId,
+              campaign_name: campaign.name,
+              lead_name: name,
+              lead_phone: phone,
+              lead_email: email,
+              timestamp: new Date().toISOString(),
+              event_type: campaign.event_type,
+              user_id: user.id
+            };
+            
+            await sendWebhookData(config.webhook_url, webhookData);
+            console.log('✅ [FORM SUBMISSION] Dados enviados via webhook externo com sucesso');
+          }
+        }
+      } catch (error) {
+        console.error('❌ [FORM SUBMISSION] Erro ao enviar dados via webhook externo:', error);
+      }
 
-    console.log('📱 [FORM SUBMISSION] Processando formulário via trackRedirect...');
-    
-    try {
+      // 🎯 COLETA UTMs E PARÂMETROS EXPANDIDOS
+      const utms = collectUrlParameters();
+      console.log('🌐 [FORM SUBMISSION] UTMs e parâmetros coletados:', utms);
+
+      console.log('📱 [FORM SUBMISSION] Processando formulário via trackRedirect...');
+      
       const result = await trackRedirect(
         campaignId, 
         phone, 
         name, 
-        campaign?.event_type,
-        {
-          utm_source: utms.utm_source,
-          utm_medium: utms.utm_medium,
-          utm_campaign: utms.utm_campaign,
-          utm_content: utms.utm_content,
-          utm_term: utms.utm_term,
-          gclid: utms.gclid,
-          fbclid: utms.fbclid,
-          site_source_name: utms.site_source_name,
-          adset_name: utms.adset_id,
-          campaign_name: utms.campaign_id,
-          ad_name: utms.ad_id,
-          placement: utms.placement
-        }
+        campaign.event_type,
+        utms
       );
       
       console.log('✅ [FORM SUBMISSION] trackRedirect executado com sucesso:', result);
       
-      // Get target WhatsApp number
-      const targetPhone = result.targetPhone || campaign?.whatsapp_number;
-      
-      if (!targetPhone) {
-        console.warn('⚠️ [FORM SUBMISSION] Número de WhatsApp não configurado para esta campanha');
-        toast.error('Número de WhatsApp não configurado para esta campanha');
-        throw new Error('Número de WhatsApp não configurado');
-      }
-      
       // Build WhatsApp URL with custom message
-      let whatsappUrl = `https://wa.me/${targetPhone}`;
+      let whatsappUrl = `https://wa.me/${campaign.whatsapp_number}`;
       
-      if (campaign?.custom_message) {
+      if (campaign.custom_message) {
         let message = campaign.custom_message;
         if (name) {
           message = message.replace(/\{nome\}/gi, name);
@@ -165,26 +141,27 @@ export const useFormSubmission = (
         whatsappUrl += `?text=${encodedMessage}`;
       }
       
-      console.log('↗️ [FORM SUBMISSION] Redirecting to WhatsApp with URL:', whatsappUrl);
+      console.log('↗️ [FORM SUBMISSION] Redirecionando para WhatsApp:', whatsappUrl);
       
       toast.success('Lead salvo! Redirecionando para o WhatsApp...');
       
-      // Garantir que o redirecionamento aconteça
+      // Garantir que o redirecionamento aconteça imediatamente
       setTimeout(() => {
+        console.log('🚀 [FORM SUBMISSION] Executando redirecionamento...');
         window.location.href = whatsappUrl;
-      }, 1500);
+      }, 500);
       
-      console.log('✅ [FORM SUBMISSION] WhatsApp redirect initiated');
+      console.log('✅ [FORM SUBMISSION] Redirecionamento WhatsApp iniciado');
+      
     } catch (error) {
-      console.error('❌ [FORM SUBMISSION] Error in trackRedirect or WhatsApp redirect:', error);
+      console.error('❌ [FORM SUBMISSION] Erro no trackRedirect ou redirecionamento WhatsApp:', error);
       toast.error('Erro ao processar redirecionamento. Tentando novamente...');
       
       // Fallback: tentar redirecionamento direto
-      if (campaign?.whatsapp_number) {
-        setTimeout(() => {
-          window.location.href = `https://wa.me/${campaign.whatsapp_number}`;
-        }, 1000);
-      }
+      setTimeout(() => {
+        console.log('🔄 [FORM SUBMISSION] Executando redirecionamento de fallback...');
+        window.location.href = `https://wa.me/${campaign.whatsapp_number}`;
+      }, 1000);
       
       throw new Error('Erro ao processar redirecionamento');
     }
