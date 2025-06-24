@@ -6,7 +6,6 @@ import { Lead } from '@/types';
 import { Campaign } from '@/types';
 import { useEnhancedPixelTracking } from './useEnhancedPixelTracking';
 import { collectUrlParameters } from '@/lib/dataCollection';
-import { supabase } from '@/integrations/supabase/client';
 
 export const useFormSubmission = (
   campaignId: string | null,
@@ -52,16 +51,6 @@ export const useFormSubmission = (
       campaign: campaign.name
     });
 
-    // ✅ VERIFICAR AUTENTICAÇÃO DO USUÁRIO
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      console.error('❌ [FORM SUBMISSION] Usuário não autenticado:', authError);
-      toast.error('Erro: Usuário não autenticado');
-      throw new Error('Usuário não autenticado');
-    }
-
-    console.log('✅ [FORM SUBMISSION] Usuário autenticado:', user.id);
-
     // Verificar se o número do WhatsApp está configurado
     if (!campaign.whatsapp_number) {
       console.error('❌ [FORM SUBMISSION] Número de WhatsApp não configurado para esta campanha');
@@ -99,8 +88,7 @@ export const useFormSubmission = (
               lead_phone: phone,
               lead_email: email,
               timestamp: new Date().toISOString(),
-              event_type: campaign.event_type,
-              user_id: user.id
+              event_type: campaign.event_type
             };
             
             await sendWebhookData(config.webhook_url, webhookData);
