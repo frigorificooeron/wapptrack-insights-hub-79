@@ -16,11 +16,11 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSubmit, loading }) => {
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState('');
-  const { deviceData, captureAndSave } = useDeviceData();
+  const { deviceData, captureAndSave, isLoading: isCapturingDevice, captureError } = useDeviceData();
 
   useEffect(() => {
     // Capturar dados do dispositivo quando o componente for montado
-    console.log('📱 Capturando dados do dispositivo automaticamente');
+    console.log('📱 [CONTACT FORM] Componente montado, iniciando captura de dispositivo');
   }, []);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,12 +48,24 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSubmit, loading }) => {
       // Process phone to add Brazil country code (55)
       const processedPhone = processBrazilianPhone(phone);
       
-      // 💾 SALVAR DADOS DO DISPOSITIVO COM O TELEFONE
-      console.log('💾 Salvando dados do dispositivo com telefone:', processedPhone);
-      await captureAndSave(processedPhone);
+      // 💾 GARANTIR QUE OS DADOS DO DISPOSITIVO SEJAM SALVOS COM O TELEFONE
+      console.log('💾 [CONTACT FORM] Salvando dados do dispositivo com telefone:', processedPhone);
       
+      try {
+        await captureAndSave(processedPhone);
+        console.log('✅ [CONTACT FORM] Dados do dispositivo salvos com sucesso');
+      } catch (deviceError) {
+        console.error('❌ [CONTACT FORM] Erro ao salvar dados do dispositivo:', deviceError);
+        // Continuar mesmo com erro nos dados do dispositivo
+      }
+      
+      // Aguardar um pouco para garantir que os dados foram salvos
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      console.log('📝 [CONTACT FORM] Enviando formulário...');
       await onSubmit(processedPhone, name);
     } catch (err) {
+      console.error('❌ [CONTACT FORM] Erro no envio:', err);
       setError('Erro ao processar redirecionamento');
     }
   };
@@ -106,12 +118,20 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSubmit, loading }) => {
           {/* Debug: mostrar dados capturados */}
           {deviceData && (
             <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
-              📱 Dados capturados: {deviceData.device_type} • {deviceData.browser} • {deviceData.location}
+              📱 Dados capturados: {deviceData.device_type} • {deviceData.browser} • {deviceData.location || 'Localização não disponível'}
+              {isCapturingDevice && <span className="ml-2 text-blue-600">Capturando...</span>}
+              {captureError && <span className="ml-2 text-red-600">Erro: {captureError}</span>}
+            </div>
+          )}
+          
+          {isCapturingDevice && (
+            <div className="text-xs text-blue-600">
+              🔄 Capturando dados do dispositivo...
             </div>
           )}
         </CardContent>
         <CardFooter>
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full" disabled={loading || isCapturingDevice}>
             {loading ? 'Redirecionando...' : 'Continuar para o WhatsApp'}
           </Button>
         </CardFooter>
