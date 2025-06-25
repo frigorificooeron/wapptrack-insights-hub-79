@@ -63,7 +63,8 @@ export const useDirectWhatsAppRedirect = (
       try {
         console.log('📱 [DIRECT WHATSAPP] Capturando dados do dispositivo...');
         const deviceData = await captureAndSave();
-        deviceSessionId = deviceData?.browser_fingerprint || `session_${Date.now()}`;
+        // Criar um identificador único baseado nos dados do dispositivo
+        deviceSessionId = `${deviceData?.device_type || 'unknown'}_${deviceData?.browser || 'unknown'}_${Date.now()}`;
         console.log('✅ [DIRECT WHATSAPP] Dados do dispositivo capturados com ID:', deviceSessionId);
       } catch (deviceError) {
         console.warn('⚠️ [DIRECT WHATSAPP] Erro ao capturar dados do dispositivo:', deviceError);
