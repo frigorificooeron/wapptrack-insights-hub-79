@@ -147,6 +147,69 @@ export type Database = {
         }
         Relationships: []
       }
+      device_data: {
+        Row: {
+          browser: string | null
+          city: string | null
+          country: string | null
+          created_at: string
+          device_model: string | null
+          device_type: string | null
+          facebook_ad_id: string | null
+          facebook_adset_id: string | null
+          facebook_campaign_id: string | null
+          id: string
+          ip_address: string | null
+          language: string | null
+          location: string | null
+          os: string | null
+          phone: string
+          screen_resolution: string | null
+          timezone: string | null
+          updated_at: string
+        }
+        Insert: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          device_model?: string | null
+          device_type?: string | null
+          facebook_ad_id?: string | null
+          facebook_adset_id?: string | null
+          facebook_campaign_id?: string | null
+          id?: string
+          ip_address?: string | null
+          language?: string | null
+          location?: string | null
+          os?: string | null
+          phone: string
+          screen_resolution?: string | null
+          timezone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          device_model?: string | null
+          device_type?: string | null
+          facebook_ad_id?: string | null
+          facebook_adset_id?: string | null
+          facebook_campaign_id?: string | null
+          id?: string
+          ip_address?: string | null
+          language?: string | null
+          location?: string | null
+          os?: string | null
+          phone?: string
+          screen_resolution?: string | null
+          timezone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           ad_account: string | null
