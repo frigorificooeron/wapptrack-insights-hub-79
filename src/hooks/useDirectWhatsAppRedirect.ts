@@ -5,6 +5,7 @@ import { useEnhancedPixelTracking } from './useEnhancedPixelTracking';
 import { collectUrlParameters } from '@/lib/dataCollection';
 import { saveTrackingData } from '@/services/sessionTrackingService';
 import { supabase } from '@/integrations/supabase/client';
+import { useDeviceData } from './useDeviceData';
 
 type UTMVars = {
   utm_source?: string;
@@ -28,6 +29,8 @@ export const useDirectWhatsAppRedirect = (
   campaignId: string | null,
   pixelInitialized: boolean
 ) => {
+  const { captureAndSave } = useDeviceData();
+
   const handleDirectWhatsAppRedirect = async (
     campaignData: Campaign,
     options?: {
@@ -55,9 +58,21 @@ export const useDirectWhatsAppRedirect = (
       const currentUtms = options?.utms || collectUrlParameters();
       console.log('🌐 [DIRECT WHATSAPP] UTMs coletados:', currentUtms);
 
-      // 🆕 CRIAR PENDING_LEAD DIRETAMENTE
+      // 🆕 CAPTURAR E SALVAR DADOS DO DISPOSITIVO COM ID ÚNICO
+      let deviceSessionId = null;
       try {
-        console.log('📋 [DIRECT WHATSAPP] Criando pending_lead para modo direto...');
+        console.log('📱 [DIRECT WHATSAPP] Capturando dados do dispositivo...');
+        const deviceData = await captureAndSave();
+        deviceSessionId = deviceData?.browser_fingerprint || `session_${Date.now()}`;
+        console.log('✅ [DIRECT WHATSAPP] Dados do dispositivo capturados com ID:', deviceSessionId);
+      } catch (deviceError) {
+        console.warn('⚠️ [DIRECT WHATSAPP] Erro ao capturar dados do dispositivo:', deviceError);
+        deviceSessionId = `fallback_${Date.now()}`;
+      }
+
+      // 🆕 CRIAR PENDING_LEAD COM IDENTIFICADORES DE CORRELAÇÃO EXPANDIDOS
+      try {
+        console.log('📋 [DIRECT WHATSAPP] Criando pending_lead melhorado para modo direto...');
         
         const pendingLeadData = {
           campaign_id: campaignId!,
@@ -71,6 +86,7 @@ export const useDirectWhatsAppRedirect = (
           utm_content: currentUtms.utm_content || '',
           utm_term: currentUtms.utm_term || '',
           webhook_data: {
+            // 🎯 DADOS EXPANDIDOS PARA CORRELAÇÃO
             site_source_name: currentUtms.site_source_name,
             adset_name: currentUtms.adset_id,
             campaign_name: currentUtms.campaign_id,
@@ -80,11 +96,26 @@ export const useDirectWhatsAppRedirect = (
             fbclid: currentUtms.fbclid,
             facebook_ad_id: currentUtms.facebook_ad_id,
             facebook_adset_id: currentUtms.facebook_adset_id,
-            facebook_campaign_id: currentUtms.facebook_campaign_id
+            facebook_campaign_id: currentUtms.facebook_campaign_id,
+            // 🆕 IDENTIFICADORES DE SESSÃO PARA CORRELAÇÃO
+            device_session_id: deviceSessionId,
+            redirect_timestamp: new Date().toISOString(),
+            user_agent: navigator.userAgent,
+            screen_resolution: `${screen.width}x${screen.height}`,
+            language: navigator.language,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            // 🆕 DADOS TÉCNICOS PARA MATCHING
+            correlation_window: 300000, // 5 minutos em ms
+            redirect_type: 'direct_whatsapp',
+            campaign_click_id: `click_${campaignId}_${Date.now()}`
           }
         };
 
-        console.log('💾 [DIRECT WHATSAPP] Dados do pending_lead:', pendingLeadData);
+        console.log('💾 [DIRECT WHATSAPP] Dados do pending_lead expandido:', {
+          campaign_id: pendingLeadData.campaign_id,
+          device_session_id: deviceSessionId,
+          correlation_data: pendingLeadData.webhook_data
+        });
 
         const { data, error: pendingError } = await supabase
           .from('pending_leads')
@@ -97,25 +128,35 @@ export const useDirectWhatsAppRedirect = (
           throw pendingError;
         }
 
-        console.log('✅ [DIRECT WHATSAPP] Pending_lead criado com sucesso:', data.id);
+        console.log('✅ [DIRECT WHATSAPP] Pending_lead expandido criado com sucesso:', data.id);
 
       } catch (trackError) {
-        console.error('❌ [DIRECT WHATSAPP] Erro ao processar pending_lead:', trackError);
+        console.error('❌ [DIRECT WHATSAPP] Erro ao processar pending_lead expandido:', trackError);
         // Continuar mesmo com erro para não bloquear o redirecionamento
       }
 
-      // 🆕 SALVAR DADOS DE TRACKING COM IDENTIFICADORES ÚNICOS
+      // 🆕 SALVAR DADOS DE TRACKING COM IDENTIFICADORES EXPANDIDOS
       try {
-        const trackingResult = await saveTrackingData(currentUtms, campaignId!);
+        const enhancedTrackingData = {
+          ...currentUtms,
+          device_session_id: deviceSessionId,
+          campaign_click_id: `click_${campaignId}_${Date.now()}`,
+          redirect_timestamp: new Date().toISOString(),
+          correlation_window: 300000, // 5 minutos
+          tracking_method: 'direct_whatsapp_enhanced'
+        };
+
+        const trackingResult = await saveTrackingData(enhancedTrackingData, campaignId!);
         if (trackingResult.success) {
-          console.log('✅ [DIRECT WHATSAPP] Dados de tracking salvos:', {
+          console.log('✅ [DIRECT WHATSAPP] Dados de tracking expandidos salvos:', {
             session_id: trackingResult.session_id,
             browser_fingerprint: trackingResult.browser_fingerprint,
+            device_session_id: deviceSessionId,
             campaign_id: campaignId
           });
         }
       } catch (trackingError) {
-        console.warn('⚠️ [DIRECT WHATSAPP] Erro ao salvar tracking data, continuando...:', trackingError);
+        console.warn('⚠️ [DIRECT WHATSAPP] Erro ao salvar tracking expandido, continuando...:', trackingError);
       }
 
       // Tracking avançado se necessário
@@ -125,7 +166,8 @@ export const useDirectWhatsAppRedirect = (
           console.log('📊 [DIRECT WHATSAPP] Executando tracking avançado:', campaignData.event_type);
           await trackEnhancedCustomEvent(campaignData.event_type, {
             redirect_type: 'direct_whatsapp',
-            campaign_name: campaignData.name
+            campaign_name: campaignData.name,
+            device_session_id: deviceSessionId
           });
           console.log('✅ [DIRECT WHATSAPP] Tracking avançado executado com sucesso');
         } catch (trackingError) {
