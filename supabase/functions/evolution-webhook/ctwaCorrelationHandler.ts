@@ -1,6 +1,5 @@
 
-import { getCTWATrackingByClid } from './ctwaTrackingService.ts';
-
+// CTWA Correlation Handler - código direto no edge function para evitar importações
 export const handleCTWACorrelation = async (
   supabase: any, 
   phone: string, 

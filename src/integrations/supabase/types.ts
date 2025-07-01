@@ -147,6 +147,69 @@ export type Database = {
         }
         Relationships: []
       }
+      ctwa_tracking: {
+        Row: {
+          campaign_id: string
+          clicked_at: string
+          created_at: string
+          ctwa_clid: string
+          device_info: Json | null
+          id: string
+          ip_address: string | null
+          language: string | null
+          screen_resolution: string | null
+          source_id: string | null
+          source_url: string | null
+          timezone: string | null
+          updated_at: string
+          user_agent: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_term: string | null
+        }
+        Insert: {
+          campaign_id: string
+          clicked_at?: string
+          created_at?: string
+          ctwa_clid: string
+          device_info?: Json | null
+          id?: string
+          ip_address?: string | null
+          language?: string | null
+          screen_resolution?: string | null
+          source_id?: string | null
+          source_url?: string | null
+          timezone?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_term?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          clicked_at?: string
+          created_at?: string
+          ctwa_clid?: string
+          device_info?: Json | null
+          id?: string
+          ip_address?: string | null
+          language?: string | null
+          screen_resolution?: string | null
+          source_id?: string | null
+          source_url?: string | null
+          timezone?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_term?: string | null
+        }
+        Relationships: []
+      }
       device_data: {
         Row: {
           browser: string | null

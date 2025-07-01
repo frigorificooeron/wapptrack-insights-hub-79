@@ -25,6 +25,11 @@ export interface UrlParameters {
   adset_name?: string;
   campaign_name?: string;
   ad_name?: string;
+  // 🆕 Click-to-WhatsApp parameters
+  ctwa_clid?: string;
+  source_url?: string;
+  source_id?: string;
+  media_url?: string;
 }
 
 export interface DeviceData {
@@ -152,12 +157,18 @@ export const collectUrlParameters = () => {
   const facebook_ad_id = urlParams.get('facebook_ad_id') || '';
   const facebook_adset_id = urlParams.get('facebook_adset_id') || '';
   const facebook_campaign_id = urlParams.get('facebook_campaign_id') || '';
+  
+  // 🆕 Collect expanded name parameters
+  const adset_name = urlParams.get('adset_name') || '';
+  const campaign_name = urlParams.get('campaign_name') || '';
+  const ad_name = urlParams.get('ad_name') || '';
 
   console.log('📊 [DATA COLLECTION] Parâmetros coletados:', {
     utm_source, utm_medium, utm_campaign, utm_content, utm_term,
     ctwa_clid, source_url, source_id, media_url,
     fbclid, gclid,
-    facebook_ad_id, facebook_adset_id, facebook_campaign_id
+    facebook_ad_id, facebook_adset_id, facebook_campaign_id,
+    adset_name, campaign_name, ad_name
   });
 
   return {
@@ -181,7 +192,11 @@ export const collectUrlParameters = () => {
     placement,
     facebook_ad_id,
     facebook_adset_id,
-    facebook_campaign_id
+    facebook_campaign_id,
+    // 🆕 Expanded name parameters
+    adset_name,
+    campaign_name,
+    ad_name
   };
 };
 
