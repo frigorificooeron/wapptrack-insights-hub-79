@@ -1,8 +1,8 @@
-
 import { getDeviceDataByPhone } from './deviceDataHandler.ts';
 import { getTrackingDataBySession } from './sessionTrackingHandler.ts';
+import { handleCTWACorrelation } from './ctwaCorrelationHandler.ts';
 
-// 🆕 HANDLER MELHORADO COM MÉTODOS 1 + 2 COMBINADOS + LOGS DETALHADOS
+// 🆕 HANDLER MELHORADO COM MÉTODOS 1 + 2 + CTWA COMBINADOS + LOGS DETALHADOS
 export const handleEnhancedPendingLeadConversion = async (
   supabase: any, 
   phone: string, 
@@ -12,7 +12,7 @@ export const handleEnhancedPendingLeadConversion = async (
   contactName?: string,
   messageTimestamp?: string
 ) => {
-  console.log(`🔄 [ENHANCED PENDING] ===== INICIANDO CONVERSÃO MELHORADA =====`);
+  console.log(`🔄 [ENHANCED PENDING] ===== INICIANDO CONVERSÃO MELHORADA COM CTWA =====`);
   console.log(`🔄 [ENHANCED PENDING] Parâmetros recebidos:`, {
     phone,
     messageText: messageText?.substring(0, 100),
@@ -23,11 +23,31 @@ export const handleEnhancedPendingLeadConversion = async (
   });
   
   try {
+    // 🎯 MÉTODO CTWA: TENTAR CORRELAÇÃO CTWA PRIMEIRO
+    console.log('🎯 [ENHANCED PENDING] ===== TENTANDO CORRELAÇÃO CTWA =====');
+    const ctwaCorrelationResult = await handleCTWACorrelation(
+      supabase,
+      phone,
+      messageText,
+      messageId,
+      status,
+      contactName,
+      messageTimestamp
+    );
+
+    if (ctwaCorrelationResult) {
+      console.log('🎉 [ENHANCED PENDING] SUCESSO! Correlação CTWA encontrou e converteu o lead');
+      return true;
+    }
+
+    console.log('ℹ️ [ENHANCED PENDING] Correlação CTWA não encontrou match, tentando métodos tradicionais...');
+
+    // Continue with existing methods if CTWA correlation fails
     const messageTime = messageTimestamp ? new Date(messageTimestamp) : new Date();
     const correlationWindow = 5 * 60 * 1000; // 5 minutos
     const windowStart = new Date(messageTime.getTime() - correlationWindow);
     
-    console.log(`🕒 [ENHANCED PENDING] Janela de correlação configurada:`, {
+    console.log(`🕒 [ENHANCED PENDING] Janela de correlação tradicional configurada:`, {
       messageTime: messageTime.toISOString(),
       windowStart: windowStart.toISOString(),
       correlationWindowMs: correlationWindow
@@ -47,7 +67,7 @@ export const handleEnhancedPendingLeadConversion = async (
       .eq('status', 'pending')
       .gte('created_at', windowStart.toISOString())
       .order('created_at', { ascending: false })
-      .limit(5); // Aumentar limite para debug
+      .limit(5);
 
     console.log(`📋 [ENHANCED PENDING] Resultado busca telefone exato:`, {
       error: exactError,
@@ -93,7 +113,6 @@ export const handleEnhancedPendingLeadConversion = async (
       });
 
       if (!pendingError && pendingContactLeads && pendingContactLeads.length > 0) {
-        // Buscar o mais recente dentro da janela
         matchedPendingLead = pendingContactLeads[0];
         console.log(`✅ [ENHANCED PENDING] Método 1.2 - Match por PENDING_CONTACT encontrado:`, {
           id: matchedPendingLead.id,
@@ -169,12 +188,12 @@ export const handleEnhancedPendingLeadConversion = async (
 
     // ❌ SE NENHUM MÉTODO FUNCIONOU
     if (!matchedPendingLead) {
-      console.log(`❌ [ENHANCED PENDING] ===== FALHA TOTAL =====`);
-      console.log(`❌ [ENHANCED PENDING] Nenhum pending_lead encontrado com ambos os métodos`, {
+      console.log(`❌ [ENHANCED PENDING] ===== FALHA TOTAL (INCLUINDO CTWA) =====`);
+      console.log(`❌ [ENHANCED PENDING] Nenhum pending_lead encontrado com todos os métodos`, {
         phone,
         windowStart: windowStart.toISOString(),
         messageTime: messageTime.toISOString(),
-        methodsAttempted: ['exact_phone', 'pending_contact', 'session_correlation']
+        methodsAttempted: ['ctwa_correlation', 'exact_phone', 'pending_contact', 'session_correlation']
       });
       
       // 🔍 DEBUG: Listar todos os pending_leads para análise
@@ -454,7 +473,7 @@ export const handleEnhancedPendingLeadConversion = async (
     return true;
 
   } catch (error) {
-    console.error('❌ [ENHANCED PENDING] ERRO GERAL na conversão melhorada:', error);
+    console.error('❌ [ENHANCED PENDING] ERRO GERAL na conversão melhorada com CTWA:', error);
     return false;
   }
 };

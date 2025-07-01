@@ -122,47 +122,66 @@ export interface FacebookData {
 }
 
 // URL Parameter Collection - EXPANDIDA
-export const collectUrlParameters = (): UrlParameters => {
-  const params = new URLSearchParams(window.location.search);
-  const hash = window.location.hash.substring(1);
-  const hashParams = new URLSearchParams(hash);
+export const collectUrlParameters = () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const referrer = document.referrer;
   
-  const allParams = new URLSearchParams();
-  params.forEach((value, key) => allParams.set(key, value));
-  hashParams.forEach((value, key) => allParams.set(key, value));
+  // Collect standard UTM parameters
+  const utm_source = urlParams.get('utm_source') || '';
+  const utm_medium = urlParams.get('utm_medium') || '';
+  const utm_campaign = urlParams.get('utm_campaign') || '';
+  const utm_content = urlParams.get('utm_content') || '';
+  const utm_term = urlParams.get('utm_term') || '';
   
-  console.log('🌐 [DATA COLLECTION] Parâmetros de URL coletados:', {
-    search: window.location.search,
-    hash: window.location.hash,
-    allParams: Object.fromEntries(allParams.entries())
+  // Collect Facebook/Google click IDs
+  const fbclid = urlParams.get('fbclid') || '';
+  const gclid = urlParams.get('gclid') || '';
+  
+  // 🆕 Collect Click-to-WhatsApp specific parameters
+  const ctwa_clid = urlParams.get('ctwa_clid') || '';
+  const source_url = urlParams.get('source_url') || referrer || '';
+  const source_id = urlParams.get('source_id') || '';
+  const media_url = urlParams.get('media_url') || '';
+  
+  // Collect Facebook Ads parameters
+  const site_source_name = urlParams.get('site_source_name') || '';
+  const adset_id = urlParams.get('adset_id') || '';
+  const campaign_id = urlParams.get('campaign_id') || '';
+  const ad_id = urlParams.get('ad_id') || '';
+  const placement = urlParams.get('placement') || '';
+  const facebook_ad_id = urlParams.get('facebook_ad_id') || '';
+  const facebook_adset_id = urlParams.get('facebook_adset_id') || '';
+  const facebook_campaign_id = urlParams.get('facebook_campaign_id') || '';
+
+  console.log('📊 [DATA COLLECTION] Parâmetros coletados:', {
+    utm_source, utm_medium, utm_campaign, utm_content, utm_term,
+    ctwa_clid, source_url, source_id, media_url,
+    fbclid, gclid,
+    facebook_ad_id, facebook_adset_id, facebook_campaign_id
   });
-  
+
   return {
-    utm_source: allParams.get('utm_source') || undefined,
-    utm_medium: allParams.get('utm_medium') || undefined,
-    utm_campaign: allParams.get('utm_campaign') || undefined,
-    utm_content: allParams.get('utm_content') || undefined,
-    utm_term: allParams.get('utm_term') || undefined,
-    fbclid: allParams.get('fbclid') || undefined,
-    gclid: allParams.get('gclid') || undefined,
-    ttclid: allParams.get('ttclid') || undefined,
-    _fbc: allParams.get('_fbc') || localStorage.getItem('_fbc') || undefined,
-    _fbp: allParams.get('_fbp') || localStorage.getItem('_fbp') || undefined,
-    ref: allParams.get('ref') || undefined,
-    source: allParams.get('source') || undefined,
-    campaign_id: allParams.get('campaign_id') || undefined,
-    ad_id: allParams.get('ad_id') || undefined,
-    adset_id: allParams.get('adset_id') || undefined,
-    creative_id: allParams.get('creative_id') || undefined,
-    placement: allParams.get('placement') || undefined,
-    site_source_name: allParams.get('site_source_name') || undefined,
-    facebook_ad_id: allParams.get('facebook_ad_id') || undefined,
-    facebook_adset_id: allParams.get('facebook_adset_id') || undefined,
-    facebook_campaign_id: allParams.get('facebook_campaign_id') || undefined,
-    // 🆕 PARÂMETROS EXPANDIDOS
-    adset_name: allParams.get('adset_name') || allParams.get('adset_id') || undefined,
-    campaign_name: allParams.get('campaign_name') || allParams.get('campaign_id') || undefined,
-    ad_name: allParams.get('ad_name') || allParams.get('ad_id') || undefined,
+    utm_source,
+    utm_medium,
+    utm_campaign,
+    utm_content,
+    utm_term,
+    fbclid,
+    gclid,
+    // 🆕 Click-to-WhatsApp parameters
+    ctwa_clid,
+    source_url,
+    source_id,
+    media_url,
+    // Facebook Ads parameters
+    site_source_name,
+    adset_id,
+    campaign_id,
+    ad_id,
+    placement,
+    facebook_ad_id,
+    facebook_adset_id,
+    facebook_campaign_id
   };
 };
 
