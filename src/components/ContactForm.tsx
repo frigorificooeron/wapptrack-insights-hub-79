@@ -81,7 +81,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSubmit, loading }) => {
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Seu nome (opcional)</Label>
+            <Label htmlFor="name">Seu nome</Label>
             <Input
               id="name"
               type="text"
