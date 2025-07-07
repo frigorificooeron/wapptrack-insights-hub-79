@@ -75,7 +75,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSubmit, loading }) => {
       <CardHeader>
         <CardTitle>Entrar em Contato</CardTitle>
         <CardDescription>
-          Por favor, informe seu WhatsApp para continuar
+          Por favor, preencha as informação para continuar
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
@@ -85,7 +85,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSubmit, loading }) => {
             <Input
               id="name"
               type="text"
-              placeholder="Seu nome completo"
+              placeholder="Seu nome"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
