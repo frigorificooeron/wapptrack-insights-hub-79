@@ -117,7 +117,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSubmit, loading }) => {
           
           {/* Debug: mostrar dados capturados */}
           {deviceData && (
-            <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+            <div className="hidden text-xs text-gray-500 bg-gray-50 p-2 rounded">
               📱 Dados capturados: {deviceData.device_type} • {deviceData.browser} • {deviceData.location || 'Localização não disponível'}
               {isCapturingDevice && <span className="ml-2 text-blue-600">Capturando...</span>}
               {captureError && <span className="ml-2 text-red-600">Erro: {captureError}</span>}
