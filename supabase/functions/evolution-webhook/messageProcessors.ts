@@ -1,7 +1,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 
-// ✅ FUNÇÃO ATUALIZADA PARA PROCESSAR MENSAGENS DE CLIENTE (SEM ATUALIZAR last_message)
+// ✅ FUNÇÃO ATUALIZADA PARA PROCESSAR MENSAGENS DE CLIENTE (AGORA SALVA A MENSAGEM)
 export const processClientMessage = async (params: {
   supabase: any;
   message: any;
@@ -24,22 +24,30 @@ export const processClientMessage = async (params: {
     message.pushName
   );
   
-  // Atualizar leads existentes APENAS com data de contato (preservar primeira mensagem)
+  // Atualizar leads existentes com mensagem e data de contato
   for (const lead of matchedLeads) {
     try {
+      const updateData: any = {
+        last_contact_date: new Date().toISOString(),
+        evolution_message_id: message.key?.id,
+        evolution_status: message.status,
+        last_message: messageContent, // 🔥 ADICIONAR A MENSAGEM AQUI
+      };
+
+      // Se é a primeira mensagem do lead, definir como initial_message também
+      if (!lead.initial_message) {
+        updateData.initial_message = `Primeira mensagem: ${messageContent}`;
+      }
+
       const { error: updateError } = await supabase
         .from('leads')
-        .update({
-          last_contact_date: new Date().toISOString(),
-          evolution_message_id: message.key?.id,
-          evolution_status: message.status,
-        })
+        .update(updateData)
         .eq('id', lead.id);
 
       if (updateError) {
         console.error(`❌ Error updating lead ${lead.id}:`, updateError);
       } else {
-        console.log(`✅ Updated lead ${lead.id} contact date (preserving first message)`);
+        console.log(`✅ Updated lead ${lead.id} with message: ${messageContent.substring(0, 50)}...`);
       }
     } catch (error) {
       console.error(`❌ Error processing lead ${lead.id}:`, error);
