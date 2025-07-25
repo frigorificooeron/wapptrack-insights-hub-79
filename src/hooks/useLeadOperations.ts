@@ -11,6 +11,7 @@ export const useLeadOperations = (leads: Lead[], setLeads: React.Dispatch<React.
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'add' | 'edit'>('add');
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const [currentLead, setCurrentLead] = useState<Partial<Lead>>({
     name: '',
     phone: '',
@@ -227,6 +228,47 @@ export const useLeadOperations = (leads: Lead[], setLeads: React.Dispatch<React.
     }
   };
 
+  const handleSelectLead = (leadId: string) => {
+    setSelectedLeads(prev => 
+      prev.includes(leadId) 
+        ? prev.filter(id => id !== leadId)
+        : [...prev, leadId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedLeads.length === leads.length) {
+      setSelectedLeads([]);
+    } else {
+      setSelectedLeads(leads.map(lead => lead.id));
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedLeads.length === 0) return;
+
+    const confirmMessage = `Tem certeza que deseja excluir ${selectedLeads.length} lead(s) selecionado(s)?`;
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      // Excluir todos os leads selecionados
+      await Promise.all(selectedLeads.map(id => deleteLead(id)));
+      
+      // Atualizar a lista removendo os leads excluídos
+      setLeads(leads.filter(lead => !selectedLeads.includes(lead.id)));
+      
+      // Limpar seleção
+      setSelectedLeads([]);
+      
+      toast.success(`${selectedLeads.length} lead(s) excluído(s) com sucesso`);
+    } catch (error) {
+      console.error('Error deleting selected leads:', error);
+      toast.error('Erro ao excluir leads selecionados');
+    }
+  };
+
   const openWhatsApp = (phone: string) => {
     const formattedPhone = phone.replace(/\D/g, '');
     window.open(`https://wa.me/${formattedPhone}`, '_blank');
@@ -240,6 +282,7 @@ export const useLeadOperations = (leads: Lead[], setLeads: React.Dispatch<React.
     dialogMode,
     currentLead,
     selectedLead,
+    selectedLeads,
     handleInputChange,
     handlePhoneChange,
     handleSelectChange,
@@ -249,6 +292,9 @@ export const useLeadOperations = (leads: Lead[], setLeads: React.Dispatch<React.
     handleSaveLead,
     handleSaveFromDetailDialog,
     handleDeleteLead,
+    handleSelectLead,
+    handleSelectAll,
+    handleDeleteSelected,
     openWhatsApp,
     isCreatingSale // 🆕 EXPOR STATUS DE CRIAÇÃO DE VENDA
   };

@@ -27,6 +27,7 @@ const Leads = () => {
     dialogMode,
     currentLead,
     selectedLead,
+    selectedLeads,
     handleInputChange,
     handlePhoneChange,
     handleSelectChange,
@@ -36,6 +37,9 @@ const Leads = () => {
     handleSaveLead,
     handleSaveFromDetailDialog,
     handleDeleteLead,
+    handleSelectLead,
+    handleSelectAll,
+    handleDeleteSelected,
     openWhatsApp
   } = useLeadOperations(leads, setLeads);
 
@@ -224,6 +228,10 @@ const Leads = () => {
         <LeadsTable
           leads={filteredLeads}
           isLoading={isLoading}
+          selectedLeads={selectedLeads}
+          onSelectLead={handleSelectLead}
+          onSelectAll={handleSelectAll}
+          onDeleteSelected={handleDeleteSelected}
           onView={handleOpenViewDialog}
           onDelete={handleDeleteLead}
           onOpenWhatsApp={openWhatsApp}

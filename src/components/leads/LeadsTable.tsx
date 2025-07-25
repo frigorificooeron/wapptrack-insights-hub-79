@@ -3,6 +3,7 @@ import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, Trash2, ExternalLink } from "lucide-react";
 import { Lead } from '@/types';
 import { formatBrazilianPhone } from '@/lib/phoneUtils';
@@ -12,6 +13,10 @@ import { ptBR } from 'date-fns/locale';
 interface LeadsTableProps {
   leads: Lead[];
   isLoading: boolean;
+  selectedLeads: string[];
+  onSelectLead: (leadId: string) => void;
+  onSelectAll: () => void;
+  onDeleteSelected: () => void;
   onView: (lead: Lead) => void;
   onDelete: (id: string) => void;
   onOpenWhatsApp: (phone: string) => void;
@@ -20,6 +25,10 @@ interface LeadsTableProps {
 const LeadsTable: React.FC<LeadsTableProps> = ({
   leads,
   isLoading,
+  selectedLeads,
+  onSelectLead,
+  onSelectAll,
+  onDeleteSelected,
   onView,
   onDelete,
   onOpenWhatsApp
@@ -58,91 +67,126 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
     );
   }
 
+  const allSelected = leads.length > 0 && selectedLeads.length === leads.length;
+  const someSelected = selectedLeads.length > 0;
+
   return (
-    <div className="rounded-md border overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="min-w-32">Campanha</TableHead>
-            <TableHead className="min-w-32">Nome</TableHead>
-            <TableHead className="w-36 min-w-36">Telefone</TableHead>
-            <TableHead className="min-w-24">Status</TableHead>
-            <TableHead className="w-32 min-w-32">Data Criação</TableHead>
-            <TableHead className="w-32 min-w-32">Primeiro Contato</TableHead>
-            <TableHead className="w-32 min-w-32">Último Contato</TableHead>
-            <TableHead className="text-right min-w-32">Ações</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {leads.length === 0 ? (
+    <>
+      {someSelected && (
+        <div className="mb-4 p-4 bg-muted/50 rounded-lg flex items-center justify-between">
+          <span className="text-sm font-medium">
+            {selectedLeads.length} lead(s) selecionado(s)
+          </span>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={onDeleteSelected}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Excluir Selecionados
+          </Button>
+        </div>
+      )}
+      
+      <div className="rounded-md border overflow-x-auto">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                Nenhum lead encontrado
-              </TableCell>
+              <TableHead className="w-12">
+                <Checkbox
+                  checked={allSelected}
+                  onCheckedChange={onSelectAll}
+                  aria-label="Selecionar todos"
+                />
+              </TableHead>
+              <TableHead className="min-w-32">Campanha</TableHead>
+              <TableHead className="min-w-32">Nome</TableHead>
+              <TableHead className="w-36 min-w-36">Telefone</TableHead>
+              <TableHead className="min-w-24">Status</TableHead>
+              <TableHead className="w-32 min-w-32">Data Criação</TableHead>
+              <TableHead className="w-32 min-w-32">Primeiro Contato</TableHead>
+              <TableHead className="w-32 min-w-32">Último Contato</TableHead>
+              <TableHead className="text-right min-w-32">Ações</TableHead>
             </TableRow>
-          ) : (
-            leads.map((lead) => (
-              <TableRow key={lead.id} className="hover:bg-muted/50">
-                <TableCell className="font-medium min-w-32">{lead.campaign}</TableCell>
-                <TableCell className="min-w-32">{lead.name}</TableCell>
-                <TableCell className="w-36 min-w-36 font-mono text-sm text-center whitespace-nowrap px-6">
-                  {formatBrazilianPhone(lead.phone)}
-                </TableCell>
-                <TableCell className="min-w-24">
-                  <Badge className={getStatusColor(lead.status)}>
-                    {getStatusLabel(lead.status)}
-                  </Badge>
-                </TableCell>
-                <TableCell className="w-32 min-w-32 text-xs whitespace-nowrap">
-                  {lead.created_at
-                    ? format(new Date(lead.created_at), 'dd/MM/yy HH:mm', { locale: ptBR })
-                    : '-'}
-                </TableCell>
-                <TableCell className="w-32 min-w-32 text-xs whitespace-nowrap">
-                  {lead.first_contact_date
-                    ? format(new Date(lead.first_contact_date), 'dd/MM/yy HH:mm', { locale: ptBR })
-                    : '-'}
-                </TableCell>
-                <TableCell className="w-32 min-w-32 text-xs whitespace-nowrap">
-                  {lead.last_contact_date
-                    ? format(new Date(lead.last_contact_date), 'dd/MM/yy HH:mm', { locale: ptBR })
-                    : '-'}
-                </TableCell>
-                <TableCell className="text-right min-w-32">
-                  <div className="flex justify-end space-x-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onOpenWhatsApp(lead.phone)}
-                      title="Abrir WhatsApp"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onView(lead)}
-                      title="Ver detalhes"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onDelete(lead.id)}
-                      title="Excluir lead"
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+          </TableHeader>
+          <TableBody>
+            {leads.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                  Nenhum lead encontrado
                 </TableCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
-    </div>
+            ) : (
+              leads.map((lead) => (
+                <TableRow key={lead.id} className="hover:bg-muted/50">
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedLeads.includes(lead.id)}
+                      onCheckedChange={() => onSelectLead(lead.id)}
+                      aria-label={`Selecionar ${lead.name}`}
+                    />
+                  </TableCell>
+                  <TableCell className="font-medium min-w-32">{lead.campaign}</TableCell>
+                  <TableCell className="min-w-32">{lead.name}</TableCell>
+                  <TableCell className="w-36 min-w-36 font-mono text-sm text-center whitespace-nowrap px-6">
+                    {formatBrazilianPhone(lead.phone)}
+                  </TableCell>
+                  <TableCell className="min-w-24">
+                    <Badge className={getStatusColor(lead.status)}>
+                      {getStatusLabel(lead.status)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="w-32 min-w-32 text-xs whitespace-nowrap">
+                    {lead.created_at
+                      ? format(new Date(lead.created_at), 'dd/MM/yy HH:mm', { locale: ptBR })
+                      : '-'}
+                  </TableCell>
+                  <TableCell className="w-32 min-w-32 text-xs whitespace-nowrap">
+                    {lead.first_contact_date
+                      ? format(new Date(lead.first_contact_date), 'dd/MM/yy HH:mm', { locale: ptBR })
+                      : '-'}
+                  </TableCell>
+                  <TableCell className="w-32 min-w-32 text-xs whitespace-nowrap">
+                    {lead.last_contact_date
+                      ? format(new Date(lead.last_contact_date), 'dd/MM/yy HH:mm', { locale: ptBR })
+                      : '-'}
+                  </TableCell>
+                  <TableCell className="text-right min-w-32">
+                    <div className="flex justify-end space-x-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onOpenWhatsApp(lead.phone)}
+                        title="Abrir WhatsApp"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onView(lead)}
+                        title="Ver detalhes"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onDelete(lead.id)}
+                        title="Excluir lead"
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </>
   );
 };
 
