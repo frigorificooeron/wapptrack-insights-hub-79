@@ -59,18 +59,18 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
   }
 
   return (
-    <div className="rounded-md border">
+    <div className="rounded-md border overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Campanha</TableHead>
-            <TableHead>Nome</TableHead>
-            <TableHead>Telefone</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Data Criação</TableHead>
-            <TableHead>Primeiro Contato</TableHead>
-            <TableHead>Último Contato</TableHead>
-            <TableHead className="text-right">Ações</TableHead>
+            <TableHead className="min-w-32">Campanha</TableHead>
+            <TableHead className="min-w-32">Nome</TableHead>
+            <TableHead className="w-36 min-w-36">Telefone</TableHead>
+            <TableHead className="min-w-24">Status</TableHead>
+            <TableHead className="w-32 min-w-32">Data Criação</TableHead>
+            <TableHead className="w-32 min-w-32">Primeiro Contato</TableHead>
+            <TableHead className="w-32 min-w-32">Último Contato</TableHead>
+            <TableHead className="text-right min-w-32">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -83,33 +83,33 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
           ) : (
             leads.map((lead) => (
               <TableRow key={lead.id} className="hover:bg-muted/50">
-                <TableCell className="font-medium">{lead.campaign}</TableCell>
-                <TableCell>{lead.name}</TableCell>
-                <TableCell className="font-mono text-sm">
+                <TableCell className="font-medium min-w-32">{lead.campaign}</TableCell>
+                <TableCell className="min-w-32">{lead.name}</TableCell>
+                <TableCell className="w-36 min-w-36 font-mono text-sm text-center whitespace-nowrap px-6">
                   {formatBrazilianPhone(lead.phone)}
                 </TableCell>
-                <TableCell>
+                <TableCell className="min-w-24">
                   <Badge className={getStatusColor(lead.status)}>
                     {getStatusLabel(lead.status)}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-sm">
+                <TableCell className="w-32 min-w-32 text-xs whitespace-nowrap">
                   {lead.created_at
-                    ? format(new Date(lead.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })
+                    ? format(new Date(lead.created_at), 'dd/MM/yy HH:mm', { locale: ptBR })
                     : '-'}
                 </TableCell>
-                <TableCell className="text-sm">
+                <TableCell className="w-32 min-w-32 text-xs whitespace-nowrap">
                   {lead.first_contact_date
-                    ? format(new Date(lead.first_contact_date), 'dd/MM/yyyy HH:mm', { locale: ptBR })
+                    ? format(new Date(lead.first_contact_date), 'dd/MM/yy HH:mm', { locale: ptBR })
                     : '-'}
                 </TableCell>
-                <TableCell className="text-sm">
+                <TableCell className="w-32 min-w-32 text-xs whitespace-nowrap">
                   {lead.last_contact_date
-                    ? format(new Date(lead.last_contact_date), 'dd/MM/yyyy HH:mm', { locale: ptBR })
+                    ? format(new Date(lead.last_contact_date), 'dd/MM/yy HH:mm', { locale: ptBR })
                     : '-'}
                 </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end space-x-2">
+                <TableCell className="text-right min-w-32">
+                  <div className="flex justify-end space-x-1">
                     <Button
                       variant="outline"
                       size="sm"
