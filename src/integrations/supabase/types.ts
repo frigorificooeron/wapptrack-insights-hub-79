@@ -7,10 +7,10 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+    PostgrestVersion: "13.0.4"
   }
   public: {
     Tables: {
@@ -544,6 +544,42 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_instances: {
+        Row: {
+          base_url: string
+          created_at: string
+          description: string | null
+          id: string
+          instance_name: string
+          status: string
+          updated_at: string
+          user_id: string
+          webhook_url: string | null
+        }
+        Insert: {
+          base_url?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          instance_name: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          webhook_url?: string | null
+        }
+        Update: {
+          base_url?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          instance_name?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          webhook_url?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -551,19 +587,19 @@ export type Database = {
     Functions: {
       create_shared_access_token: {
         Args: {
-          p_name: string
           p_description?: string
-          p_permissions?: Json
           p_expires_at?: string
+          p_name: string
+          p_permissions?: Json
         }
         Returns: {
-          id: string
-          token: string
           created_at: string
-          expires_at: string
-          permissions: Json
-          name: string
           description: string
+          expires_at: string
+          id: string
+          name: string
+          permissions: Json
+          token: string
         }[]
       }
       deactivate_shared_token: {
@@ -573,12 +609,12 @@ export type Database = {
       get_token_permissions: {
         Args: { p_token: string }
         Returns: {
-          id: string
-          permissions: Json
-          name: string
-          description: string
           created_at: string
+          description: string
           expires_at: string
+          id: string
+          name: string
+          permissions: Json
         }[]
       }
       get_user_by_instance: {

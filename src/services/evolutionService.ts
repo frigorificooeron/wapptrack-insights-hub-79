@@ -85,6 +85,76 @@ export const evolutionService = {
       };
     }
   },
+
+  // Instance management methods
+  async getAllInstances() {
+    try {
+      const { data, error } = await supabase
+        .from('whatsapp_instances')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return { success: true, data };
+    } catch (error: any) {
+      console.error('Error getting instances:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createInstance(instanceName: string, description?: string) {
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      if (!authData.user) throw new Error('Usuário não autenticado');
+
+      const { data, error } = await supabase
+        .from('whatsapp_instances')
+        .insert({
+          instance_name: instanceName,
+          description,
+          user_id: authData.user.id,
+          webhook_url: `https://bwicygxyhkdgrypqrijo.supabase.co/functions/v1/evolution-webhook`
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { success: true, data };
+    } catch (error: any) {
+      console.error('Error creating instance:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  async updateInstanceStatus(instanceId: string, status: string) {
+    try {
+      const { error } = await supabase
+        .from('whatsapp_instances')
+        .update({ status })
+        .eq('id', instanceId);
+
+      if (error) throw error;
+      return { success: true };
+    } catch (error: any) {
+      console.error('Error updating instance status:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  async deleteInstance(instanceId: string) {
+    try {
+      const { error } = await supabase
+        .from('whatsapp_instances')
+        .delete()
+        .eq('id', instanceId);
+
+      if (error) throw error;
+      return { success: true };
+    } catch (error: any) {
+      console.error('Error deleting instance:', error);
+      return { success: false, error: error.message };
+    }
+  }
 };
 
 
