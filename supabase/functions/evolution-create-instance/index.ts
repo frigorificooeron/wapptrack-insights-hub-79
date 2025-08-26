@@ -39,25 +39,63 @@ serve(async (req) => {
     
     console.log(`Creating instance: ${instanceName}`);
     
+    const requestBody = {
+      instanceName: instanceName,
+      token: apiKey,
+      qrcode: true,
+      webhook: webhook || `https://bwicygxyhkdgrypqrijo.supabase.co/functions/v1/evolution-webhook`
+    };
+
+    console.log('Request payload:', JSON.stringify(requestBody, null, 2));
+    console.log('API Key length:', apiKey?.length || 'undefined');
+    console.log('Base URL:', baseUrl);
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'apikey': apiKey,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        instanceName: instanceName,
-        token: apiKey,
-        qrcode: true,
-        webhook: webhook || `https://bwicygxyhkdgrypqrijo.supabase.co/functions/v1/evolution-webhook`
-      })
+      body: JSON.stringify(requestBody)
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP Error: ${response.status} - ${response.statusText}`);
+    console.log('Response status:', response.status, response.statusText);
+    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+    let data;
+    let errorMessage = '';
+    
+    try {
+      const responseText = await response.text();
+      console.log('Raw response body:', responseText);
+      
+      if (responseText) {
+        data = JSON.parse(responseText);
+      } else {
+        data = {};
+      }
+    } catch (parseError) {
+      console.error('Failed to parse response as JSON:', parseError);
+      errorMessage = `Invalid JSON response from Evolution API`;
+      data = {};
     }
 
-    const data = await response.json();
+    if (!response.ok) {
+      console.error('Evolution API error response:', data);
+      
+      // Extract meaningful error message from response
+      let detailedError = `HTTP ${response.status}: ${response.statusText}`;
+      
+      if (data?.message) {
+        detailedError += ` - ${data.message}`;
+      } else if (data?.error) {
+        detailedError += ` - ${data.error}`;
+      } else if (errorMessage) {
+        detailedError += ` - ${errorMessage}`;
+      }
+      
+      throw new Error(detailedError);
+    }
     console.log('Evolution API create response:', data);
 
     return new Response(JSON.stringify({

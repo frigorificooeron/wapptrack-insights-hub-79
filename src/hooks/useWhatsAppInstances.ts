@@ -6,7 +6,7 @@ import { evolutionService } from '@/services/evolutionService';
 export interface WhatsAppInstance {
   id: string;
   user_id: string;
-  instance_name: string;
+  name: string;
   description?: string;
   base_url: string;
   status: 'connected' | 'disconnected' | 'connecting' | 'error';
@@ -28,7 +28,12 @@ export const useWhatsAppInstances = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setInstances((data || []) as WhatsAppInstance[]);
+      // Map database column to interface property
+      const mappedData = (data || []).map(item => ({
+        ...item,
+        name: item.instance_name
+      })) as WhatsAppInstance[];
+      setInstances(mappedData);
     } catch (error: any) {
       console.error('Error loading instances:', error);
       toast.error('Erro ao carregar instâncias');
@@ -38,41 +43,98 @@ export const useWhatsAppInstances = () => {
   };
 
   const createInstance = async (instanceName: string, description?: string) => {
+    if (!instanceName.trim()) {
+      toast.error('Nome da instância é obrigatório');
+      return;
+    }
+
+    // Validate instance name format
+    const namePattern = /^[a-zA-Z0-9_-]+$/;
+    if (!namePattern.test(instanceName.trim())) {
+      toast.error('Nome da instância deve conter apenas letras, números, hífens e underscores');
+      return;
+    }
+
+    if (instanceName.trim().length < 3 || instanceName.trim().length > 50) {
+      toast.error('Nome da instância deve ter entre 3 e 50 caracteres');
+      return;
+    }
+
+    // Check if instance name already exists
+    const existingInstance = instances.find(instance => 
+      instance.name.toLowerCase() === instanceName.trim().toLowerCase()
+    );
+    
+    if (existingInstance) {
+      toast.error('Já existe uma instância com este nome');
+      return;
+    }
+
     setCreating(true);
     try {
       const { data: authData } = await supabase.auth.getUser();
       if (!authData.user) throw new Error('Usuário não autenticado');
 
+      console.log('Creating Evolution instance:', instanceName);
+
       // First create instance in Evolution API
       const evolutionResult = await evolutionService.createEvolutionInstance(
-        instanceName,
+        instanceName.trim(),
         `https://bwicygxyhkdgrypqrijo.supabase.co/functions/v1/evolution-webhook`
       );
 
       if (!evolutionResult.success) {
-        throw new Error(evolutionResult.error || 'Erro ao criar instância na Evolution API');
+        console.error('Evolution API error:', evolutionResult.error);
+        
+        // Provide more specific error messages
+        let userMessage = 'Erro ao criar instância na Evolution API';
+        
+        if (evolutionResult.error?.includes('400')) {
+          userMessage = 'Dados inválidos ou instância já existe na Evolution API';
+        } else if (evolutionResult.error?.includes('401')) {
+          userMessage = 'Chave de API inválida ou não configurada';
+        } else if (evolutionResult.error?.includes('500')) {
+          userMessage = 'Erro interno da Evolution API';
+        } else if (evolutionResult.error?.includes('timeout')) {
+          userMessage = 'Timeout ao conectar com a Evolution API';
+        }
+        
+        throw new Error(userMessage);
       }
+
+      console.log('Evolution instance created successfully, creating database record');
 
       // Then create in our database
       const { data, error } = await supabase
         .from('whatsapp_instances')
         .insert({
-          instance_name: instanceName,
-          description,
+          instance_name: instanceName.trim(),
+          description: description?.trim() || null,
           user_id: authData.user.id,
+          base_url: 'https://evolutionapi.workidigital.tech',
+          status: 'disconnected',
           webhook_url: `https://bwicygxyhkdgrypqrijo.supabase.co/functions/v1/evolution-webhook`
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error:', error);
+        throw new Error('Erro ao salvar instância no banco de dados');
+      }
 
-      setInstances(prev => [data as WhatsAppInstance, ...prev]);
+      console.log('Instance created successfully:', data);
+      // Map database column to interface property
+      const mappedInstance = {
+        ...data,
+        name: data.instance_name
+      } as WhatsAppInstance;
+      setInstances(prev => [mappedInstance, ...prev]);
       toast.success('Instância criada com sucesso!');
       return data;
     } catch (error: any) {
       console.error('Error creating instance:', error);
-      toast.error('Erro ao criar instância: ' + error.message);
+      toast.error(error.message || 'Erro ao criar instância');
       throw error;
     } finally {
       setCreating(false);

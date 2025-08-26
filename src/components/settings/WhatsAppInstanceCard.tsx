@@ -58,7 +58,7 @@ const WhatsAppInstanceCard = ({ instance, onStatusUpdate, onDelete }: WhatsAppIn
     try {
       onStatusUpdate(instance.id, 'connecting');
       
-      const response = await evolutionService.getQRCode(instance.instance_name);
+      const response = await evolutionService.getQRCode(instance.name);
 
       if (response.success && response.qrcode) {
         setQrCode(response.qrcode);
@@ -66,7 +66,7 @@ const WhatsAppInstanceCard = ({ instance, onStatusUpdate, onDelete }: WhatsAppIn
         
         // Check status periodically
         const checkStatus = setInterval(async () => {
-          const statusResponse = await evolutionService.getInstanceStatus(instance.instance_name);
+          const statusResponse = await evolutionService.getInstanceStatus(instance.name);
           if (statusResponse.success && statusResponse.status === 'open') {
             onStatusUpdate(instance.id, 'connected');
             setShowQR(false);
@@ -96,7 +96,7 @@ const WhatsAppInstanceCard = ({ instance, onStatusUpdate, onDelete }: WhatsAppIn
     try {
       onStatusUpdate(instance.id, 'connecting');
       
-      const response = await evolutionService.disconnectInstance(instance.instance_name);
+      const response = await evolutionService.disconnectInstance(instance.name);
 
       if (response.success) {
         onStatusUpdate(instance.id, 'disconnected');
@@ -127,7 +127,7 @@ const WhatsAppInstanceCard = ({ instance, onStatusUpdate, onDelete }: WhatsAppIn
           <div className="flex items-center space-x-3">
             <MessageSquare className="w-5 h-5" />
             <div>
-              <h3 className="font-semibold">{instance.instance_name}</h3>
+              <h3 className="font-semibold">{instance.name}</h3>
               {instance.description && (
                 <p className="text-sm text-muted-foreground">{instance.description}</p>
               )}
