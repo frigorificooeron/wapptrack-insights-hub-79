@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { evolutionService } from '@/services/evolutionService';
 
 export interface WhatsAppInstance {
   id: string;
@@ -42,6 +43,17 @@ export const useWhatsAppInstances = () => {
       const { data: authData } = await supabase.auth.getUser();
       if (!authData.user) throw new Error('Usuário não autenticado');
 
+      // First create instance in Evolution API
+      const evolutionResult = await evolutionService.createEvolutionInstance(
+        instanceName,
+        `https://bwicygxyhkdgrypqrijo.supabase.co/functions/v1/evolution-webhook`
+      );
+
+      if (!evolutionResult.success) {
+        throw new Error(evolutionResult.error || 'Erro ao criar instância na Evolution API');
+      }
+
+      // Then create in our database
       const { data, error } = await supabase
         .from('whatsapp_instances')
         .insert({

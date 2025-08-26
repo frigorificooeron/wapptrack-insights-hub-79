@@ -20,6 +20,29 @@ export interface DisconnectResponse {
 }
 
 export const evolutionService = {
+  async createEvolutionInstance(instanceName: string, webhook?: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data, error } = await supabase.functions.invoke('evolution-create-instance', {
+        body: {
+          instanceName,
+          webhook
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      return { success: true };
+    } catch (error: any) {
+      console.error('Error creating Evolution instance:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to create Evolution instance'
+      };
+    }
+  },
+
   async getQRCode(instanceId: string): Promise<QRCodeResponse> {
     try {
       const { data, error } = await supabase.functions.invoke('evolution-qrcode', {
