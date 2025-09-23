@@ -34,13 +34,28 @@ serve(async (req) => {
       });
     }
 
+    // Validate instanceName
+    if (!instanceName || instanceName.trim().length === 0) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'instanceName cannot be empty'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     const baseUrl = "https://evolutionapi.workidigital.tech";
     const url = `${baseUrl}/instance/create`;
     
     console.log(`Creating instance: ${instanceName}`);
+    console.log('API Key configured:', !!apiKey);
+    console.log('API Key length:', apiKey?.length || 'undefined');
+    console.log('Base URL:', baseUrl);
     
+    // Try different payload formats based on Evolution API documentation
     const requestBody = {
-      instanceName: instanceName,
+      instanceName: instanceName.trim(),
       token: apiKey,
       qrcode: true,
       integration: "WHATSAPP-BAILEYS",
@@ -52,15 +67,25 @@ serve(async (req) => {
     };
 
     console.log('Request payload:', JSON.stringify(requestBody, null, 2));
-    console.log('API Key length:', apiKey?.length || 'undefined');
-    console.log('Base URL:', baseUrl);
+
+    // Try different authentication header formats
+    const headers = {
+      'Content-Type': 'application/json',
+      'apikey': apiKey,
+      'Authorization': `apikey ${apiKey}`,
+      'Accept': 'application/json'
+    };
+
+    console.log('Request headers (without sensitive data):', {
+      'Content-Type': headers['Content-Type'],
+      'Accept': headers['Accept'],
+      'apikey': '[REDACTED]',
+      'Authorization': '[REDACTED]'
+    });
 
     const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'apikey': apiKey,
-        'Content-Type': 'application/json'
-      },
+      headers,
       body: JSON.stringify(requestBody)
     });
 
