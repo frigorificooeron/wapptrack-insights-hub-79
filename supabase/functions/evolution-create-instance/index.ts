@@ -43,7 +43,12 @@ serve(async (req) => {
       instanceName: instanceName,
       token: apiKey,
       qrcode: true,
-      webhook: webhook || `https://bwicygxyhkdgrypqrijo.supabase.co/functions/v1/evolution-webhook`
+      integration: "WHATSAPP-BAILEYS",
+      webhook: {
+        url: webhook || `https://bwicygxyhkdgrypqrijo.supabase.co/functions/v1/evolution-webhook`,
+        byEvents: true,
+        base64: true
+      }
     };
 
     console.log('Request payload:', JSON.stringify(requestBody, null, 2));
