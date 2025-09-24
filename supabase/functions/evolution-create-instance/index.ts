@@ -53,34 +53,27 @@ serve(async (req) => {
     console.log('API Key length:', apiKey?.length || 'undefined');
     console.log('Base URL:', baseUrl);
     
-    // Try different payload formats based on Evolution API documentation
+    // Correct payload format based on Evolution API documentation
     const requestBody = {
       instanceName: instanceName.trim(),
-      token: apiKey,
       qrcode: true,
       integration: "WHATSAPP-BAILEYS",
-      webhook: {
-        url: webhook || `https://bwicygxyhkdgrypqrijo.supabase.co/functions/v1/evolution-webhook`,
-        byEvents: true,
-        base64: true
-      }
+      webhook: webhook || `https://bwicygxyhkdgrypqrijo.supabase.co/functions/v1/evolution-webhook`
     };
 
     console.log('Request payload:', JSON.stringify(requestBody, null, 2));
 
-    // Try different authentication header formats
+    // Use only apikey header for authentication
     const headers = {
       'Content-Type': 'application/json',
       'apikey': apiKey,
-      'Authorization': `apikey ${apiKey}`,
       'Accept': 'application/json'
     };
 
     console.log('Request headers (without sensitive data):', {
       'Content-Type': headers['Content-Type'],
       'Accept': headers['Accept'],
-      'apikey': '[REDACTED]',
-      'Authorization': '[REDACTED]'
+      'apikey': '[REDACTED]'
     });
 
     const response = await fetch(url, {
@@ -139,7 +132,7 @@ serve(async (req) => {
     console.error('Error creating instance:', error);
     return new Response(JSON.stringify({
       success: false,
-      error: error.message || 'Failed to create instance'
+      error: (error as Error)?.message || 'Failed to create instance'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
