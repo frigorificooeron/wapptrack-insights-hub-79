@@ -72,7 +72,7 @@ export const handleEnhancedPendingLeadConversion = async (
     console.log(`📋 [ENHANCED PENDING] Resultado busca telefone exato:`, {
       error: exactError,
       count: exactPhoneLeads?.length || 0,
-      leads: exactPhoneLeads?.map(lead => ({
+      leads: exactPhoneLeads?.map((lead: any) => ({
         id: lead.id,
         phone: lead.phone,
         created_at: lead.created_at,
@@ -103,7 +103,7 @@ export const handleEnhancedPendingLeadConversion = async (
       console.log(`📋 [ENHANCED PENDING] Resultado busca PENDING_CONTACT:`, {
         error: pendingError,
         count: pendingContactLeads?.length || 0,
-        leads: pendingContactLeads?.map(lead => ({
+        leads: pendingContactLeads?.map((lead: any) => ({
           id: lead.id,
           phone: lead.phone,
           created_at: lead.created_at,
@@ -137,7 +137,7 @@ export const handleEnhancedPendingLeadConversion = async (
           device_type: deviceData.device_type,
           browser: deviceData.browser,
           location: deviceData.location,
-          created_at: deviceData.created_at
+          created_at: (deviceData as any)?.created_at
         });
         
         // Buscar tracking data correlacionada
@@ -147,7 +147,7 @@ export const handleEnhancedPendingLeadConversion = async (
         if (sessionCorrelationData?.campaign_id) {
           console.log(`🎯 [ENHANCED PENDING] Correlação encontrou campaign_id:`, {
             campaign_id: sessionCorrelationData.campaign_id,
-            session_id: sessionCorrelationData.session_id
+            session_id: (sessionCorrelationData as any)?.session_id
           });
           
           // Buscar pending_lead por campaign_id dentro da janela temporal
@@ -164,7 +164,7 @@ export const handleEnhancedPendingLeadConversion = async (
           console.log(`📋 [ENHANCED PENDING] Resultado correlação por campaign_id:`, {
             error: correlatedError,
             count: correlatedLeads?.length || 0,
-            leads: correlatedLeads?.map(lead => ({
+            leads: correlatedLeads?.map((lead: any) => ({
               id: lead.id,
               phone: lead.phone,
               created_at: lead.created_at
@@ -208,7 +208,7 @@ export const handleEnhancedPendingLeadConversion = async (
       
       console.log(`📋 [ENHANCED PENDING] Pending leads recentes encontrados:`, {
         count: allPendingLeads?.length || 0,
-        leads: allPendingLeads?.map(lead => ({
+        leads: allPendingLeads?.map((lead: any) => ({
           id: lead.id,
           phone: lead.phone,
           created_at: lead.created_at,
@@ -406,9 +406,9 @@ export const handleEnhancedPendingLeadConversion = async (
           screen_resolution: deviceData.screen_resolution,
           timezone: deviceData.timezone,
           language: deviceData.language,
-          facebook_ad_id: deviceData.facebook_ad_id || webhookData.facebook_ad_id,
-          facebook_adset_id: deviceData.facebook_adset_id || webhookData.facebook_adset_id,
-          facebook_campaign_id: deviceData.facebook_campaign_id || webhookData.facebook_campaign_id
+          facebook_ad_id: (deviceData as any)?.facebook_ad_id || webhookData.facebook_ad_id,
+          facebook_adset_id: (deviceData as any)?.facebook_adset_id || webhookData.facebook_adset_id,
+          facebook_campaign_id: (deviceData as any)?.facebook_campaign_id || webhookData.facebook_campaign_id
         }),
         // Dados de correlação
         custom_fields: { 

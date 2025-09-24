@@ -77,7 +77,7 @@ serve(async (req) => {
     console.error('Error disconnecting instance:', error);
     return new Response(JSON.stringify({
       success: false,
-      error: error.message || 'Failed to disconnect instance'
+      error: (error as Error)?.message || 'Failed to disconnect instance'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

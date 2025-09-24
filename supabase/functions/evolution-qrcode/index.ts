@@ -107,7 +107,7 @@ serve(async (req)=>{
     console.error('Error getting QR code:', error);
     return new Response(JSON.stringify({
       success: false,
-      error: error.message || 'Failed to get QR code'
+      error: (error as Error)?.message || 'Failed to get QR code'
     }), {
       status: 500,
       headers: {

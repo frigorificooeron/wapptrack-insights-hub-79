@@ -218,7 +218,7 @@ export const handleDirectLead = async ({
   } catch (error) {
     console.error(`💥 [DIRECT LEAD] Erro crítico em handleDirectLead:`, error);
     logSecurityEvent('Critical error in handleDirectLead', {
-      error: error.message,
+      error: (error as Error)?.message || 'Unknown error',
       phone: realPhoneNumber,
       instance: instanceName
     }, 'high');

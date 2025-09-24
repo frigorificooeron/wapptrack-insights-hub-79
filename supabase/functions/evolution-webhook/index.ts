@@ -65,7 +65,7 @@ serve(async (req) => {
       } catch (error) {
         logSecurityEvent('Invalid instance name in webhook', { 
           instance: body.instance, 
-          error: error.message 
+          error: (error as Error)?.message || 'Unknown error'
         }, 'high');
         return new Response(
           JSON.stringify({ error: 'Invalid instance name' }),
@@ -95,7 +95,7 @@ serve(async (req) => {
         } catch (error) {
           logSecurityEvent('Invalid phone number or message content', { 
             remoteJid, 
-            error: error.message 
+            error: (error as Error)?.message || 'Unknown error'
           }, 'medium');
           return new Response(
             JSON.stringify({ error: 'Invalid phone number or message format' }),
@@ -151,8 +151,8 @@ serve(async (req) => {
   } catch (error) {
     console.error('💥 Webhook error:', error);
     logSecurityEvent('Webhook processing error', { 
-      error: error.message,
-      stack: error.stack 
+      error: (error as Error)?.message || 'Unknown error',
+      stack: (error as Error)?.stack
     }, 'high');
     
     return new Response(JSON.stringify({ error: 'Internal server error' }), {

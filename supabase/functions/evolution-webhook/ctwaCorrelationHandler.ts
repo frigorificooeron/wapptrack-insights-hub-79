@@ -54,7 +54,7 @@ export const handleCTWACorrelation = async (
       if (!pendingError && pendingLeads && pendingLeads.length > 0) {
         console.log('📋 [CTWA CORRELATION] Pending leads com CTWA encontrados:', {
           count: pendingLeads.length,
-          leads: pendingLeads.map(lead => ({
+          leads: pendingLeads.map((lead: any) => ({
             id: lead.id,
             ctwa_clid: lead.webhook_data?.ctwa_clid,
             created_at: lead.created_at
