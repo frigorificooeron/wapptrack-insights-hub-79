@@ -18,59 +18,54 @@ export const handleDirectLead = async ({
   console.log(`🆕 [DIRECT LEAD] Processando novo contato direto de: ${realPhoneNumber} (instância: ${instanceName})`);
   
   try {
-    // 🔍 Buscar usuário responsável pela instância usando a nova função SQL
-    console.log(`🔍 [DIRECT LEAD] Buscando usuário para instância: ${instanceName}`);
+    // 🔍 BUSCAR CAMPANHA E USUÁRIO PELA INSTÂNCIA
+    console.log(`🔍 [DIRECT LEAD] Buscando campanha para instância: ${instanceName}`);
     
     let responsibleUserId: string | null = null;
+    let linkedCampaign: any = null;
     
+    // Primeiro: tentar encontrar campanha com redirect_type='whatsapp' para esta instância
     try {
-      const { data: userData, error: userError } = await supabase.rpc('get_user_by_instance', {
-        instance_name_param: instanceName
-      });
+      const { data: campaigns, error: campaignError } = await supabase
+        .from('campaigns')
+        .select('*')
+        .eq('active', true)
+        .eq('redirect_type', 'whatsapp')
+        .not('user_id', 'is', null);
 
-      if (userData && !userError) {
-        responsibleUserId = userData;
-        console.log(`✅ [DIRECT LEAD] Usuário encontrado via get_user_by_instance: ${responsibleUserId}`);
+      if (campaigns && campaigns.length > 0 && !campaignError) {
+        // Usar a primeira campanha ativa encontrada
+        linkedCampaign = campaigns[0];
+        responsibleUserId = linkedCampaign.user_id;
+        
+        console.log(`✅ [DIRECT LEAD] Campanha WhatsApp encontrada:`, {
+          campaign_id: linkedCampaign.id,
+          campaign_name: linkedCampaign.name,
+          user_id: responsibleUserId,
+          instance: instanceName
+        });
       } else {
-        console.log(`⚠️ [DIRECT LEAD] get_user_by_instance não retornou usuário:`, userError);
+        console.log(`⚠️ [DIRECT LEAD] Nenhuma campanha WhatsApp ativa encontrada`);
       }
-    } catch (funcError) {
-      console.log(`❌ [DIRECT LEAD] Erro ao chamar get_user_by_instance:`, funcError);
+    } catch (campaignError) {
+      console.log(`❌ [DIRECT LEAD] Erro ao buscar campanhas:`, campaignError);
     }
 
-    // 🔄 Fallback robusto: buscar primeiro usuário ativo do sistema
+    // Se não encontrou campanha, usar fallback de usuário
     if (!responsibleUserId) {
-      console.log(`🔄 [DIRECT LEAD] Tentando fallback: primeiro usuário do sistema...`);
+      console.log(`🔄 [DIRECT LEAD] Tentando fallback de usuário via get_user_by_instance...`);
       
       try {
-        const { data: fallbackUsers } = await supabase
-          .from('campaigns')
-          .select('user_id')
-          .not('user_id', 'is', null)
-          .eq('active', true)
-          .limit(1);
+        const { data: userData, error: userError } = await supabase.rpc('get_user_by_instance', {
+          instance_name_param: instanceName
+        });
 
-        if (fallbackUsers && fallbackUsers.length > 0) {
-          responsibleUserId = fallbackUsers[0].user_id;
-          console.log(`✅ [DIRECT LEAD] Usuário fallback encontrado: ${responsibleUserId}`);
+        if (userData && !userError) {
+          responsibleUserId = userData;
+          console.log(`✅ [DIRECT LEAD] Usuário encontrado via fallback: ${responsibleUserId}`);
         }
-      } catch (fallbackError) {
-        console.log(`❌ [DIRECT LEAD] Erro no fallback:`, fallbackError);
-      }
-    }
-
-    // 🚨 Último recurso: usar primeiro usuário autenticado
-    if (!responsibleUserId) {
-      console.log(`🚨 [DIRECT LEAD] ÚLTIMO RECURSO: Buscando primeiro usuário autenticado...`);
-      
-      try {
-        const { data: authUsers } = await supabase.auth.admin.listUsers();
-        if (authUsers && authUsers.users && authUsers.users.length > 0) {
-          responsibleUserId = authUsers.users[0].id;
-          console.log(`✅ [DIRECT LEAD] Usuário de último recurso: ${responsibleUserId}`);
-        }
-      } catch (authError) {
-        console.log(`❌ [DIRECT LEAD] Erro ao buscar usuários auth:`, authError);
+      } catch (funcError) {
+        console.log(`❌ [DIRECT LEAD] Erro ao chamar get_user_by_instance:`, funcError);
       }
     }
 
@@ -81,8 +76,7 @@ export const handleDirectLead = async ({
         phone: realPhoneNumber
       }, 'high');
       
-      // Ainda assim, vamos tentar criar o lead sem user_id para não perder o contato
-      console.log(`🛟 [DIRECT LEAD] Tentando criar lead sem user_id como último recurso...`);
+      console.log(`🛟 [DIRECT LEAD] Tentando criar lead sem campanha vinculada...`);
     }
 
     // 📞 Verificar se já existe um lead para este telefone
@@ -142,16 +136,17 @@ export const handleDirectLead = async ({
     const leadData: any = {
       name: getContactName(message),
       phone: realPhoneNumber,
-      campaign: "WhatsApp Orgânico",
-      campaign_id: null,
+      campaign: linkedCampaign?.name || "WhatsApp Orgânico",
+      campaign_id: linkedCampaign?.id || null,
       status: 'new',
       first_contact_date: new Date().toISOString(),
       last_message: message.message?.conversation || message.message?.extendedTextMessage?.text || 'Mensagem recebida',
-      utm_source: finalUtms.utm_source,
-      utm_medium: finalUtms.utm_medium,
-      utm_campaign: finalUtms.utm_campaign,
-      utm_content: finalUtms.utm_content,
-      utm_term: finalUtms.utm_term,
+      utm_source: linkedCampaign?.utm_source || finalUtms.utm_source,
+      utm_medium: linkedCampaign?.utm_medium || finalUtms.utm_medium,
+      utm_campaign: linkedCampaign?.utm_campaign || finalUtms.utm_campaign,
+      utm_content: linkedCampaign?.utm_content || finalUtms.utm_content,
+      utm_term: linkedCampaign?.utm_term || finalUtms.utm_term,
+      tracking_method: linkedCampaign ? 'campaign_whatsapp' : 'direct',
       // Dados do dispositivo se disponíveis
       ...(deviceData && {
         location: deviceData.location,
@@ -164,7 +159,10 @@ export const handleDirectLead = async ({
         city: deviceData.city,
         screen_resolution: deviceData.screen_resolution,
         timezone: deviceData.timezone,
-        language: deviceData.language
+        language: deviceData.language,
+        facebook_ad_id: deviceData.facebook_ad_id,
+        facebook_adset_id: deviceData.facebook_adset_id,
+        facebook_campaign_id: deviceData.facebook_campaign_id
       })
     };
 
