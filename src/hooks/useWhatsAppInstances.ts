@@ -72,8 +72,11 @@ export const useWhatsAppInstances = () => {
 
     setCreating(true);
     try {
-      const { data: authData } = await supabase.auth.getUser();
-      if (!authData.user) throw new Error('Usuário não autenticado');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        toast.error('Você precisa estar autenticado para criar uma instância');
+        throw new Error('Usuário não autenticado');
+      }
 
       console.log('Creating Evolution instance:', instanceName);
 
@@ -117,7 +120,7 @@ export const useWhatsAppInstances = () => {
         .insert({
           instance_name: instanceName.trim(),
           description: description?.trim() || null,
-          user_id: authData.user.id,
+          user_id: session.user.id,
           base_url: 'https://evolutionapi.workidigital.tech',
           status: 'disconnected',
           webhook_url: `https://bwicygxyhkdgrypqrijo.supabase.co/functions/v1/evolution-webhook`
