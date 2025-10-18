@@ -89,16 +89,23 @@ export const useWhatsAppInstances = () => {
         // Provide more specific error messages
         let userMessage = 'Erro ao criar instância na Evolution API';
         
-        if (evolutionResult.error?.includes('400')) {
-          userMessage = 'Dados inválidos ou instância já existe na Evolution API';
-        } else if (evolutionResult.error?.includes('401')) {
+        if (evolutionResult.error?.includes('inválido') || evolutionResult.error?.includes('invalid')) {
+          userMessage = 'Nome da instância inválido. Use apenas letras, números, hífen e underscore (3-50 caracteres)';
+        } else if (evolutionResult.error?.includes('já existe') || evolutionResult.error?.includes('already exists')) {
+          userMessage = 'Uma instância com este nome já existe na Evolution API';
+        } else if (evolutionResult.error?.includes('400')) {
+          userMessage = 'Dados inválidos. Verifique o formato do nome da instância';
+        } else if (evolutionResult.error?.includes('401') || evolutionResult.error?.includes('unauthorized')) {
           userMessage = 'Chave de API inválida ou não configurada';
         } else if (evolutionResult.error?.includes('500')) {
-          userMessage = 'Erro interno da Evolution API';
-        } else if (evolutionResult.error?.includes('timeout')) {
-          userMessage = 'Timeout ao conectar com a Evolution API';
+          userMessage = 'Erro interno da Evolution API. Tente novamente';
+        } else if (evolutionResult.error?.includes('timeout') || evolutionResult.error?.includes('network')) {
+          userMessage = 'Timeout ao conectar com a Evolution API. Verifique sua conexão';
+        } else if (evolutionResult.error?.includes('Cannot read properties')) {
+          userMessage = 'Erro de validação na Evolution API. Verifique o nome da instância';
         }
         
+        toast.error(userMessage);
         throw new Error(userMessage);
       }
 
