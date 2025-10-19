@@ -16,7 +16,7 @@ export const useFormSubmission = (
 
   const updateLeadWhatsAppStatus = async (leadId: string, delivered: boolean) => {
     try {
-      const status: Lead['status'] = delivered ? 'lead' : 'to_recover';
+      const status: Lead['status'] = delivered ? 'contacted' : 'new';
       const updateData: Partial<Lead> = {
         status,
         whatsapp_delivery_attempts: delivered ? 1 : 1,

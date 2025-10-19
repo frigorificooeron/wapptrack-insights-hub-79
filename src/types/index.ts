@@ -10,7 +10,7 @@ export interface Lead {
   name: string;
   phone: string;
   campaign: string;
-  status: 'new' | 'contacted' | 'qualified' | 'converted' | 'lost' | 'lead' | 'to_recover';
+  status: 'new' | 'contacted' | 'qualified' | 'proposal' | 'negotiating' | 'converted' | 'lost' | 'cancelled';
   created_at: string;
   custom_fields?: Record<string, string>;
   notes?: string;

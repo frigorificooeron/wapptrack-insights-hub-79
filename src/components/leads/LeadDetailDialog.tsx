@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageSquare, Calendar, Phone, Tag, ExternalLink, Edit, Save, X } from 'lucide-react';
@@ -15,6 +14,8 @@ import { formatBrazilianPhone } from '@/lib/phoneUtils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import DeviceInfoDisplay from './DeviceInfoDisplay';
+import { LeadStatusBadge } from './LeadStatusBadge';
+import { FUNNEL_STATUSES, ALL_STATUSES } from '@/constants/funnelStatuses';
 
 interface LeadDetailDialogProps {
   lead: Lead | null;
@@ -58,31 +59,6 @@ const LeadDetailDialog = ({ lead, isOpen, onClose, onSave, onOpenWhatsApp }: Lea
     onOpenWhatsApp(lead.phone);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'new': return 'bg-blue-100 text-blue-800';
-      case 'contacted': return 'bg-yellow-100 text-yellow-800';
-      case 'qualified': return 'bg-purple-100 text-purple-800';
-      case 'converted': return 'bg-green-100 text-green-800';
-      case 'lost': return 'bg-red-100 text-red-800';
-      case 'lead': return 'bg-green-100 text-green-800';
-      case 'to_recover': return 'bg-orange-100 text-orange-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'new': return 'Novo';
-      case 'contacted': return 'Contatado';
-      case 'qualified': return 'Qualificado';
-      case 'converted': return 'Convertido';
-      case 'lost': return 'Perdido';
-      case 'lead': return 'Lead';
-      case 'to_recover': return 'Recuperar';
-      default: return status;
-    }
-  };
 
   // Extrair dados do dispositivo tanto do custom_fields quanto dos novos campos diretos
   const deviceInfo = (typeof lead.custom_fields?.device_info === 'object' && lead.custom_fields.device_info !== null) 
@@ -198,19 +174,18 @@ const LeadDetailDialog = ({ lead, isOpen, onClose, onSave, onOpenWhatsApp }: Lea
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="new">Novo</SelectItem>
-                          <SelectItem value="contacted">Contatado</SelectItem>
-                          <SelectItem value="qualified">Qualificado</SelectItem>
-                          <SelectItem value="converted">Convertido</SelectItem>
-                          <SelectItem value="lost">Perdido</SelectItem>
-                          <SelectItem value="lead">Lead</SelectItem>
-                          <SelectItem value="to_recover">Recuperar</SelectItem>
+                          {ALL_STATUSES.map((status) => {
+                            const config = FUNNEL_STATUSES[status];
+                            return (
+                              <SelectItem key={status} value={status}>
+                                {config.label}
+                              </SelectItem>
+                            );
+                          })}
                         </SelectContent>
                       </Select>
                     ) : (
-                      <Badge className={getStatusColor(lead.status)}>
-                        {getStatusLabel(lead.status)}
-                      </Badge>
+                      <LeadStatusBadge status={lead.status} />
                     )}
                   </div>
 

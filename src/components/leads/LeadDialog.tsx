@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from '@/components/ui/textarea';
-import { formatBrazilianPhone } from '@/lib/phoneUtils';
+import { FUNNEL_STATUSES, ALL_STATUSES } from '@/constants/funnelStatuses';
 
 interface LeadDialogProps {
   isOpen: boolean;
@@ -103,13 +103,14 @@ const LeadDialog: React.FC<LeadDialogProps> = ({
                 <SelectValue placeholder="Selecione um status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="new">Novo</SelectItem>
-                <SelectItem value="lead">Lead</SelectItem>
-                <SelectItem value="to_recover">A recuperar</SelectItem>
-                <SelectItem value="contacted">Contactado</SelectItem>
-                <SelectItem value="qualified">Qualificado</SelectItem>
-                <SelectItem value="converted">Convertido</SelectItem>
-                <SelectItem value="lost">Perdido</SelectItem>
+                {ALL_STATUSES.map((status) => {
+                  const config = FUNNEL_STATUSES[status];
+                  return (
+                    <SelectItem key={status} value={status}>
+                      {config.label}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>

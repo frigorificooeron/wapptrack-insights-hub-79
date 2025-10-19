@@ -2,13 +2,13 @@
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, Trash2, ExternalLink } from "lucide-react";
 import { Lead } from '@/types';
 import { formatBrazilianPhone } from '@/lib/phoneUtils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { LeadStatusBadge } from './LeadStatusBadge';
 
 interface LeadsTableProps {
   leads: Lead[];
@@ -33,31 +33,6 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
   onDelete,
   onOpenWhatsApp
 }) => {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'new': return 'bg-blue-100 text-blue-800';
-      case 'lead': return 'bg-yellow-100 text-yellow-800';
-      case 'to_recover': return 'bg-orange-100 text-orange-800';
-      case 'contacted': return 'bg-purple-100 text-purple-800';
-      case 'qualified': return 'bg-indigo-100 text-indigo-800';
-      case 'converted': return 'bg-green-100 text-green-800';
-      case 'lost': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'new': return 'Novo';
-      case 'lead': return 'Lead';
-      case 'to_recover': return 'A recuperar';
-      case 'contacted': return 'Contatado';
-      case 'qualified': return 'Qualificado';
-      case 'converted': return 'Convertido';
-      case 'lost': return 'Perdido';
-      default: return status;
-    }
-  };
 
   if (isLoading) {
     return (
@@ -132,9 +107,7 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
                     {formatBrazilianPhone(lead.phone)}
                   </TableCell>
                   <TableCell className="min-w-24">
-                    <Badge className={getStatusColor(lead.status)}>
-                      {getStatusLabel(lead.status)}
-                    </Badge>
+                    <LeadStatusBadge status={lead.status} />
                   </TableCell>
                   <TableCell className="w-32 min-w-32 text-xs whitespace-nowrap">
                     {lead.created_at
