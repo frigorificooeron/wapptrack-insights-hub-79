@@ -3,13 +3,15 @@ import React, { useEffect, useState } from 'react';
 import MainLayout from '@/components/MainLayout';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getLeads, getCampaigns } from '@/services/dataService';
 import { Lead, Campaign } from '@/types';
-import { Plus } from 'lucide-react';
+import { Plus, Table2, LayoutGrid } from 'lucide-react';
 import { useLeadOperations } from '@/hooks/useLeadOperations';
 import LeadsTable from '@/components/leads/LeadsTable';
 import LeadDialog from '@/components/leads/LeadDialog';
 import LeadDetailDialog from '@/components/leads/LeadDetailDialog';
+import { KanbanBoard } from '@/components/leads/KanbanBoard';
 import { toast } from "sonner";
 import { supabase } from '@/integrations/supabase/client';
 
@@ -18,6 +20,7 @@ const Leads = () => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState<'table' | 'kanban'>('kanban');
 
   const {
     isDialogOpen,
@@ -216,26 +219,55 @@ const Leads = () => {
           </div>
         </div>
 
-        <div className="flex items-center">
-          <Input
-            placeholder="Buscar leads por nome, telefone, campanha, status ou mensagem..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-lg"
-          />
-        </div>
+        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'table' | 'kanban')} className="w-full">
+          <div className="flex items-center justify-between gap-4 mb-4">
+            <Input
+              placeholder="Buscar leads por nome, telefone, campanha, status ou mensagem..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="max-w-lg"
+            />
+            <TabsList>
+              <TabsTrigger value="kanban" className="gap-2">
+                <LayoutGrid className="h-4 w-4" />
+                Kanban
+              </TabsTrigger>
+              <TabsTrigger value="table" className="gap-2">
+                <Table2 className="h-4 w-4" />
+                Tabela
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-        <LeadsTable
-          leads={filteredLeads}
-          isLoading={isLoading}
-          selectedLeads={selectedLeads}
-          onSelectLead={handleSelectLead}
-          onSelectAll={handleSelectAll}
-          onDeleteSelected={handleDeleteSelected}
-          onView={handleOpenViewDialog}
-          onDelete={handleDeleteLead}
-          onOpenWhatsApp={openWhatsApp}
-        />
+          <TabsContent value="kanban" className="mt-0">
+            {isLoading ? (
+              <div className="flex items-center justify-center h-96">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : (
+              <KanbanBoard
+                leads={filteredLeads}
+                onLeadClick={handleOpenViewDialog}
+                onOpenWhatsApp={openWhatsApp}
+                onLeadUpdate={fetchData}
+              />
+            )}
+          </TabsContent>
+
+          <TabsContent value="table" className="mt-0">
+            <LeadsTable
+              leads={filteredLeads}
+              isLoading={isLoading}
+              selectedLeads={selectedLeads}
+              onSelectLead={handleSelectLead}
+              onSelectAll={handleSelectAll}
+              onDeleteSelected={handleDeleteSelected}
+              onView={handleOpenViewDialog}
+              onDelete={handleDeleteLead}
+              onOpenWhatsApp={openWhatsApp}
+            />
+          </TabsContent>
+        </Tabs>
 
         <LeadDialog
           isOpen={isDialogOpen}
