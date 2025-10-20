@@ -4,7 +4,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Lead } from '@/types';
-import { Phone, Eye } from 'lucide-react';
+import { MessageCircle, Eye } from 'lucide-react';
 import { formatBrazilianPhone } from '@/lib/phoneUtils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -13,13 +13,13 @@ import { cn } from '@/lib/utils';
 interface KanbanCardProps {
   lead: Lead;
   onLeadClick: (lead: Lead) => void;
-  onOpenWhatsApp: (phone: string) => void;
+  onOpenChat: (lead: Lead) => void;
 }
 
 export const KanbanCard: React.FC<KanbanCardProps> = ({
   lead,
   onLeadClick,
-  onOpenWhatsApp
+  onOpenChat
 }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: lead.id
@@ -72,10 +72,10 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
               variant="outline"
               size="sm"
               className="flex-1 h-8 text-xs"
-              onClick={() => onOpenWhatsApp(lead.phone)}
+              onClick={() => onOpenChat(lead)}
             >
-              <Phone className="h-3 w-3 mr-1" />
-              WhatsApp
+              <MessageCircle className="h-3 w-3 mr-1" />
+              Conversa
             </Button>
             <Button
               variant="outline"

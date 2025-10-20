@@ -278,6 +278,50 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_messages: {
+        Row: {
+          created_at: string
+          id: string
+          instance_name: string | null
+          is_from_me: boolean
+          lead_id: string
+          message_text: string
+          sent_at: string
+          status: string | null
+          whatsapp_message_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          instance_name?: string | null
+          is_from_me?: boolean
+          lead_id: string
+          message_text: string
+          sent_at?: string
+          status?: string | null
+          whatsapp_message_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          instance_name?: string | null
+          is_from_me?: boolean
+          lead_id?: string
+          message_text?: string
+          sent_at?: string
+          status?: string | null
+          whatsapp_message_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_messages_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           ad_account: string | null

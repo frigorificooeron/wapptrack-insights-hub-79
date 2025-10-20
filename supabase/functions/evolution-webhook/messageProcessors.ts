@@ -49,6 +49,23 @@ export const processClientMessage = async (params: {
       } else {
         console.log(`✅ Updated lead ${lead.id} with message: ${messageContent.substring(0, 50)}...`);
       }
+
+      // Salvar mensagem no histórico de chat
+      const { error: messageError } = await supabase
+        .from('lead_messages')
+        .insert({
+          lead_id: lead.id,
+          message_text: messageContent,
+          is_from_me: false,
+          whatsapp_message_id: message.key?.id,
+          instance_name: message.key?.remoteJid?.split('@')[0] || null,
+        });
+
+      if (messageError) {
+        console.error(`❌ Error saving message for lead ${lead.id}:`, messageError);
+      } else {
+        console.log(`✅ Message saved in chat history for lead ${lead.id}`);
+      }
     } catch (error) {
       console.error(`❌ Error processing lead ${lead.id}:`, error);
     }
@@ -110,6 +127,23 @@ export const processComercialMessage = async (params: {
         console.error(`❌ Error updating lead ${lead.id}:`, updateError);
       } else {
         console.log(`✅ Updated lead ${lead.id} with status: ${newStatus} (preserving first message)`);
+      }
+
+      // Salvar mensagem comercial no histórico de chat
+      const { error: messageError } = await supabase
+        .from('lead_messages')
+        .insert({
+          lead_id: lead.id,
+          message_text: messageContent,
+          is_from_me: true,
+          whatsapp_message_id: message.key?.id,
+          instance_name: message.key?.remoteJid?.split('@')[0] || null,
+        });
+
+      if (messageError) {
+        console.error(`❌ Error saving commercial message for lead ${lead.id}:`, messageError);
+      } else {
+        console.log(`✅ Commercial message saved in chat history for lead ${lead.id}`);
       }
     } catch (error) {
       console.error(`❌ Error processing lead ${lead.id}:`, error);

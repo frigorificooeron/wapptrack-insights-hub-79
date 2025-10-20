@@ -10,14 +10,14 @@ import { toast } from 'sonner';
 interface KanbanBoardProps {
   leads: Lead[];
   onLeadClick: (lead: Lead) => void;
-  onOpenWhatsApp: (phone: string) => void;
+  onOpenChat: (lead: Lead) => void;
   onLeadUpdate: () => void;
 }
 
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   leads,
   onLeadClick,
-  onOpenWhatsApp,
+  onOpenChat,
   onLeadUpdate
 }) => {
   const [activeId, setActiveId] = React.useState<string | null>(null);
@@ -72,7 +72,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             status={status}
             leads={getLeadsByStatus(status)}
             onLeadClick={onLeadClick}
-            onOpenWhatsApp={onOpenWhatsApp}
+            onOpenChat={onOpenChat}
             isDragging={isDragging}
           />
         ))}
@@ -84,7 +84,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             <KanbanCard
               lead={activeLead}
               onLeadClick={() => {}}
-              onOpenWhatsApp={() => {}}
+              onOpenChat={() => {}}
             />
           </div>
         ) : null}

@@ -12,6 +12,7 @@ import LeadsTable from '@/components/leads/LeadsTable';
 import LeadDialog from '@/components/leads/LeadDialog';
 import LeadDetailDialog from '@/components/leads/LeadDetailDialog';
 import { KanbanBoard } from '@/components/leads/KanbanBoard';
+import { LeadChatDialog } from '@/components/leads/LeadChatDialog';
 import { toast } from "sonner";
 import { supabase } from '@/integrations/supabase/client';
 
@@ -21,6 +22,8 @@ const Leads = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'table' | 'kanban'>('kanban');
+  const [chatDialogOpen, setChatDialogOpen] = useState(false);
+  const [chatLead, setChatLead] = useState<Lead | null>(null);
 
   const {
     isDialogOpen,
@@ -248,7 +251,10 @@ const Leads = () => {
               <KanbanBoard
                 leads={filteredLeads}
                 onLeadClick={handleOpenViewDialog}
-                onOpenWhatsApp={openWhatsApp}
+                onOpenChat={(lead) => {
+                  setChatLead(lead);
+                  setChatDialogOpen(true);
+                }}
                 onLeadUpdate={fetchData}
               />
             )}
@@ -288,6 +294,14 @@ const Leads = () => {
           onSave={handleSaveFromDetailDialog}
           onOpenWhatsApp={openWhatsApp}
         />
+
+        {chatLead && (
+          <LeadChatDialog
+            lead={chatLead}
+            open={chatDialogOpen}
+            onOpenChange={setChatDialogOpen}
+          />
+        )}
       </div>
     </MainLayout>
   );

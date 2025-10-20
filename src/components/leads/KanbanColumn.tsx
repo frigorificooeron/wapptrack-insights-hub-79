@@ -9,7 +9,7 @@ interface KanbanColumnProps {
   status: FunnelStatus;
   leads: Lead[];
   onLeadClick: (lead: Lead) => void;
-  onOpenWhatsApp: (phone: string) => void;
+  onOpenChat: (lead: Lead) => void;
   isDragging: boolean;
 }
 
@@ -17,7 +17,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   status,
   leads,
   onLeadClick,
-  onOpenWhatsApp,
+  onOpenChat,
   isDragging
 }) => {
   const { setNodeRef, isOver } = useDroppable({
@@ -52,7 +52,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
             key={lead.id}
             lead={lead}
             onLeadClick={onLeadClick}
-            onOpenWhatsApp={onOpenWhatsApp}
+            onOpenChat={onOpenChat}
           />
         ))}
         {leads.length === 0 && (

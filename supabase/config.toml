@@ -1,5 +1,8 @@
 
-project_id = "gbrpboxxhlwmenrajdji"
+project_id = "bwicygxyhkdgrypqrijo"
 
 [functions.evolution-webhook]
+verify_jwt = false
+
+[functions.evolution-send-message]
 verify_jwt = false
