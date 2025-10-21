@@ -10,21 +10,35 @@ export function formatBrazilianPhone(phone: string): string {
   // Remove all non-digits
   const digits = phone.replace(/\D/g, '');
   
-  // Apply Brazilian format based on length
+  // Handle different phone number formats
   if (digits.length <= 2) {
     return `(${digits}`;
+  } else if (digits.startsWith('55') && digits.length >= 12) {
+    // International format with country code: 55 85 9 9837-2658
+    const ddd = digits.slice(2, 4);
+    const number = digits.slice(4);
+    
+    if (number.length === 9) {
+      // Mobile with 9: (55) 85 99837-2658
+      return `(55) ${ddd} ${number.slice(0, 5)}-${number.slice(5)}`;
+    } else if (number.length === 8) {
+      // Landline or mobile without 9: (55) 85 9837-2658
+      return `(55) ${ddd} ${number.slice(0, 4)}-${number.slice(4)}`;
+    } else {
+      // Other cases
+      return `(55) ${ddd} ${number}`;
+    }
+  } else if (digits.length === 11) {
+    // National format with mobile 9: (85) 99837-2658
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  } else if (digits.length === 10) {
+    // National format landline: (85) 9837-2658
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
   } else if (digits.length <= 7) {
     return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
-  } else if (digits.length <= 10) {
-    // 8 digits after DDD: (85) 9999-9999
-    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
-  } else if (digits.length <= 11) {
-    // 9 digits after DDD: (85) 99999-9999
-    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
   } else {
-    // Limit to 11 digits maximum
-    const limited = digits.slice(0, 11);
-    return `(${limited.slice(0, 2)}) ${limited.slice(2, 7)}-${limited.slice(7)}`;
+    // Fallback for other lengths
+    return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
   }
 }
 
@@ -123,45 +137,17 @@ export function createPhoneVariations(phone: string): string[] {
   const digits = normalizePhoneNumber(phone);
   const variations: string[] = [digits];
   
+  // Add variation with country code
   if (digits.startsWith('55')) {
-    // Remove country code
-    const withoutCountryCode = digits.slice(2);
-    variations.push(withoutCountryCode);
-    
-    // If it's 11 digits (DDD + 9 digits), also try without the first 9
-    if (withoutCountryCode.length === 11) {
-      const ddd = withoutCountryCode.slice(0, 2);
-      const number = withoutCountryCode.slice(3); // Remove the 9
-      variations.push(ddd + number);
-      variations.push('55' + ddd + number);
-    }
-    
-    // If it's 10 digits (DDD + 8 digits), also try with a 9 added
-    if (withoutCountryCode.length === 10) {
-      const ddd = withoutCountryCode.slice(0, 2);
-      const number = withoutCountryCode.slice(2);
-      variations.push(ddd + '9' + number);
-      variations.push('55' + ddd + '9' + number);
-    }
-  } else {
-    // Add country code
-    variations.push('55' + digits);
-    
-    // If it's 10 digits (DDD + 8 digits), also try with a 9 added
-    if (digits.length === 10) {
-      const ddd = digits.slice(0, 2);
-      const number = digits.slice(2);
-      variations.push(ddd + '9' + number);
-      variations.push('55' + ddd + '9' + number);
-    }
-    
-    // If it's 11 digits (DDD + 9 digits), also try without the first 9
-    if (digits.length === 11) {
-      const ddd = digits.slice(0, 2);
-      const number = digits.slice(3); // Remove the 9
-      variations.push(ddd + number);
-      variations.push('55' + ddd + number);
-    }
+    variations.push(digits.slice(2)); // Without country code
+  } else if (digits.length >= 10) {
+    variations.push('55' + digits); // With country code
+  }
+  
+  // Add variations for last digits (for flexible search)
+  if (digits.length >= 11) {
+    variations.push(digits.slice(-11)); // Last 11 digits
+    variations.push(digits.slice(-10)); // Last 10 digits
   }
   
   // Remove duplicates
