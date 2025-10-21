@@ -11,6 +11,7 @@ export function normalizePhone(phone: string): string {
 
 /**
  * Cria variações de um número de telefone para busca flexível
+ * SEM adicionar ou remover dígitos - apenas variações de formato
  */
 export function createPhoneVariations(phone: string): string[] {
   const normalized = normalizePhone(phone);
@@ -19,45 +20,17 @@ export function createPhoneVariations(phone: string): string[] {
   // Adiciona o número normalizado
   variations.add(normalized);
   
-  // Se começar com 55 (código do Brasil)
+  // Variações de prefixo 55
   if (normalized.startsWith('55')) {
-    const withoutCountryCode = normalized.slice(2);
-    variations.add(withoutCountryCode);
-    
-    // Se tiver 11 dígitos após o código do país (DDD + 9 dígitos)
-    if (withoutCountryCode.length === 11 && withoutCountryCode[2] === '9') {
-      const ddd = withoutCountryCode.slice(0, 2);
-      const number = withoutCountryCode.slice(3); // Remove o 9 extra
-      variations.add(ddd + number);
-      variations.add('55' + ddd + number);
-    }
-    
-    // Se tiver 10 dígitos após o código do país (DDD + 8 dígitos)
-    if (withoutCountryCode.length === 10) {
-      const ddd = withoutCountryCode.slice(0, 2);
-      const number = withoutCountryCode.slice(2);
-      variations.add(ddd + '9' + number);
-      variations.add('55' + ddd + '9' + number);
-    }
-  } else {
-    // Adiciona com código do país
-    variations.add('55' + normalized);
-    
-    // Se tiver 10 dígitos (DDD + 8 dígitos)
-    if (normalized.length === 10) {
-      const ddd = normalized.slice(0, 2);
-      const number = normalized.slice(2);
-      variations.add(ddd + '9' + number);
-      variations.add('55' + ddd + '9' + number);
-    }
-    
-    // Se tiver 11 dígitos (DDD + 9 dígitos)
-    if (normalized.length === 11 && normalized[2] === '9') {
-      const ddd = normalized.slice(0, 2);
-      const number = normalized.slice(3); // Remove o 9 extra
-      variations.add(ddd + number);
-      variations.add('55' + ddd + number);
-    }
+    variations.add(normalized.slice(2)); // Sem código do país
+  } else if (normalized.length >= 10) {
+    variations.add('55' + normalized); // Com código do país
+  }
+  
+  // Variações de últimos dígitos para busca flexível
+  if (normalized.length >= 11) {
+    variations.add(normalized.slice(-11)); // Últimos 11 dígitos
+    variations.add(normalized.slice(-10)); // Últimos 10 dígitos
   }
   
   return Array.from(variations);

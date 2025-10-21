@@ -146,14 +146,6 @@ export const useLeadOperations = (leads: Lead[], setLeads: React.Dispatch<React.
       });
 
       let processedPhone = processBrazilianPhone(currentLead.phone);
-      
-      // Aplicar correção automática se necessário
-      if (shouldCorrectPhone(processedPhone)) {
-        const originalPhone = processedPhone;
-        processedPhone = correctPhoneNumber(processedPhone);
-        console.log(`Número corrigido automaticamente: ${originalPhone} → ${processedPhone}`);
-        toast.info(`Número corrigido automaticamente: ${originalPhone} → ${processedPhone}`);
-      }
 
       const leadToSave = { ...currentLead, phone: processedPhone };
 

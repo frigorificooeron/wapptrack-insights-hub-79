@@ -1,27 +1,20 @@
 
-// Create phone search variations.
-// Can be expanded in the future for more complicated rules.
+// Create phone search variations WITHOUT adding or removing digits
 export function createPhoneSearchVariations(phone: string): string[] {
   const variations = new Set<string>();
   variations.add(phone);
 
-  // Known patterns (example for DDD85 used in current code)
-  if (phone === "85998372658") {
-    variations.add("8598372658");
-    variations.add("5585998372658");
-    variations.add("558598372658");
+  // Add variation with country code
+  if (phone.startsWith("55")) {
+    variations.add(phone.slice(2)); // Without country code
+  } else if (phone.length >= 10) {
+    variations.add("55" + phone); // With country code
   }
 
-  // Add logic for Brazilian numbers with/without country code, 9 double, etc.
-  if (phone.startsWith("55") && phone.length === 13) {
-    const withoutCountryCode = phone.slice(2);
-    if (
-      withoutCountryCode.length === 11 &&
-      withoutCountryCode[2] === "9" &&
-      withoutCountryCode[3] === "9"
-    ) {
-      variations.add("55" + withoutCountryCode.slice(0, 2) + withoutCountryCode.slice(3));
-    }
+  // Add variations for last digits (for flexible search)
+  if (phone.length >= 11) {
+    variations.add(phone.slice(-11)); // Last 11 digits (DDD + 9 digits)
+    variations.add(phone.slice(-10)); // Last 10 digits (DDD + 8 digits)
   }
 
   return Array.from(variations);
