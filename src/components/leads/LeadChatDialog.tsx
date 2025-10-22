@@ -13,8 +13,9 @@ import { useLeadChat } from '@/hooks/useLeadChat';
 import { formatBrazilianPhone } from '@/lib/phoneUtils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Send, MessageCircle, Loader2 } from 'lucide-react';
+import { Send, MessageCircle, Loader2, X, Image as ImageIcon, Video, Volume2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { MediaInput } from './MediaInput';
 
 interface LeadChatDialogProps {
   lead: Lead;
@@ -27,8 +28,9 @@ export const LeadChatDialog: React.FC<LeadChatDialogProps> = ({
   open,
   onOpenChange,
 }) => {
-  const { messages, loading, sending, sendMessage } = useLeadChat(lead.id, lead.phone);
+  const { messages, loading, sending, sendMessage, sendMediaMessage } = useLeadChat(lead.id, lead.phone);
   const [inputMessage, setInputMessage] = useState('');
+  const [mediaPreview, setMediaPreview] = useState<{ url: string; type: 'image' | 'video' | 'audio'; file: File } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Auto scroll para última mensagem
@@ -39,16 +41,38 @@ export const LeadChatDialog: React.FC<LeadChatDialogProps> = ({
   }, [messages]);
 
   const handleSend = async () => {
-    if (!inputMessage.trim() || sending) return;
+    if (sending) return;
 
-    await sendMessage(inputMessage);
-    setInputMessage('');
+    if (mediaPreview) {
+      await sendMediaMessage(mediaPreview.file, mediaPreview.type, inputMessage || undefined);
+      setMediaPreview(null);
+      setInputMessage('');
+    } else if (inputMessage.trim()) {
+      await sendMessage(inputMessage);
+      setInputMessage('');
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+
+  const handleEmojiSelect = (emoji: string) => {
+    setInputMessage((prev) => prev + emoji);
+  };
+
+  const handleMediaSelect = (file: File, type: 'image' | 'video' | 'audio') => {
+    const url = URL.createObjectURL(file);
+    setMediaPreview({ url, type, file });
+  };
+
+  const handleRemoveMedia = () => {
+    if (mediaPreview) {
+      URL.revokeObjectURL(mediaPreview.url);
+      setMediaPreview(null);
     }
   };
 
@@ -129,8 +153,52 @@ export const LeadChatDialog: React.FC<LeadChatDialogProps> = ({
           )}
         </ScrollArea>
 
-        <div className="px-6 py-4 border-t">
-          <div className="flex gap-2">
+        <div className="px-6 py-4 border-t space-y-3">
+          {mediaPreview && (
+            <div className="relative inline-block">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={handleRemoveMedia}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+              {mediaPreview.type === 'image' && (
+                <div className="relative">
+                  <ImageIcon className="absolute top-2 left-2 h-4 w-4 text-white drop-shadow-lg" />
+                  <img
+                    src={mediaPreview.url}
+                    alt="Preview"
+                    className="max-h-32 rounded-lg border"
+                  />
+                </div>
+              )}
+              {mediaPreview.type === 'video' && (
+                <div className="relative">
+                  <Video className="absolute top-2 left-2 h-4 w-4 text-white drop-shadow-lg" />
+                  <video
+                    src={mediaPreview.url}
+                    className="max-h-32 rounded-lg border"
+                    controls
+                  />
+                </div>
+              )}
+              {mediaPreview.type === 'audio' && (
+                <div className="flex items-center gap-2 p-3 rounded-lg border bg-muted">
+                  <Volume2 className="h-4 w-4" />
+                  <audio src={mediaPreview.url} controls className="h-8" />
+                </div>
+              )}
+            </div>
+          )}
+          
+          <div className="flex gap-2 items-end">
+            <MediaInput
+              onEmojiSelect={handleEmojiSelect}
+              onMediaSelect={handleMediaSelect}
+              disabled={sending}
+            />
             <Input
               placeholder="Digite sua mensagem..."
               value={inputMessage}
@@ -141,7 +209,7 @@ export const LeadChatDialog: React.FC<LeadChatDialogProps> = ({
             />
             <Button
               onClick={handleSend}
-              disabled={sending || !inputMessage.trim()}
+              disabled={sending || (!inputMessage.trim() && !mediaPreview)}
               size="icon"
             >
               {sending ? (

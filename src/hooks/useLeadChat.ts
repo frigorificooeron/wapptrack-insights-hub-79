@@ -74,7 +74,7 @@ export const useLeadChat = (leadId: string, leadPhone: string) => {
     };
   }, [leadId]);
 
-  // Enviar mensagem
+  // Enviar mensagem de texto
   const sendMessage = async (messageText: string) => {
     if (!messageText.trim()) return;
 
@@ -121,10 +121,75 @@ export const useLeadChat = (leadId: string, leadPhone: string) => {
     }
   };
 
+  // Enviar mensagem com mídia
+  const sendMediaMessage = async (
+    file: File,
+    mediaType: 'image' | 'video' | 'audio',
+    caption?: string
+  ) => {
+    try {
+      setSending(true);
+
+      // Buscar instância ativa do usuário
+      const { data: instances, error: instanceError } = await supabase
+        .from('whatsapp_instances')
+        .select('instance_name')
+        .eq('status', 'connected')
+        .limit(1);
+
+      if (instanceError || !instances || instances.length === 0) {
+        toast.error('Nenhuma instância WhatsApp conectada');
+        return;
+      }
+
+      const instanceName = instances[0].instance_name;
+
+      // Converter arquivo para base64
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          resolve(result.split(',')[1]);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      // Chamar edge function para enviar mídia
+      const { data, error } = await supabase.functions.invoke('evolution-send-message', {
+        body: {
+          instanceName,
+          phone: leadPhone,
+          leadId,
+          mediaType,
+          mediaBase64: base64,
+          mimeType: file.type,
+          fileName: file.name,
+          caption,
+        },
+      });
+
+      if (error) throw error;
+
+      if (!data.success) {
+        throw new Error(data.error || 'Erro ao enviar mídia');
+      }
+
+      console.log('✅ Mídia enviada com sucesso:', data);
+      toast.success('Mídia enviada!');
+    } catch (error) {
+      console.error('❌ Erro ao enviar mídia:', error);
+      toast.error('Erro ao enviar mídia');
+    } finally {
+      setSending(false);
+    }
+  };
+
   return {
     messages,
     loading,
     sending,
     sendMessage,
+    sendMediaMessage,
   };
 };

@@ -12,12 +12,32 @@ serve(async (req) => {
   }
 
   try {
-    const { instanceName, phone, message, leadId } = await req.json();
+    const { 
+      instanceName, 
+      phone, 
+      message, 
+      leadId, 
+      mediaType, 
+      mediaBase64, 
+      mimeType, 
+      fileName, 
+      caption 
+    } = await req.json();
     
-    console.log('📤 Enviando mensagem:', { instanceName, phone, message, leadId });
+    console.log('📤 Enviando mensagem:', { 
+      instanceName, 
+      phone, 
+      hasMessage: !!message, 
+      mediaType, 
+      leadId 
+    });
 
-    if (!instanceName || !phone || !message || !leadId) {
-      throw new Error('Parâmetros obrigatórios: instanceName, phone, message, leadId');
+    if (!instanceName || !phone || !leadId) {
+      throw new Error('Parâmetros obrigatórios: instanceName, phone, leadId');
+    }
+
+    if (!message && !mediaBase64) {
+      throw new Error('Mensagem ou mídia é obrigatória');
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -42,37 +62,103 @@ serve(async (req) => {
       throw new Error('EVOLUTION_API_KEY não configurada');
     }
 
+    let evolutionData: any;
+    let messageText = message;
+
     // Enviar mensagem via Evolution API
-    const evolutionUrl = `${instance.base_url}/message/sendText/${instanceName}`;
-    console.log('🌐 Chamando Evolution API:', evolutionUrl);
-
-    const evolutionResponse = await fetch(evolutionUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': evolutionApiKey,
-      },
-      body: JSON.stringify({
+    if (mediaBase64) {
+      // Enviar mídia
+      let endpoint = '';
+      let body: any = {
         number: phone,
-        text: message,
-      }),
-    });
+      };
 
-    if (!evolutionResponse.ok) {
-      const errorText = await evolutionResponse.text();
-      console.error('❌ Erro na Evolution API:', errorText);
-      throw new Error(`Evolution API error: ${evolutionResponse.status}`);
+      if (mediaType === 'image') {
+        endpoint = 'sendMedia';
+        body = {
+          number: phone,
+          mediatype: 'image',
+          mimetype: mimeType || 'image/jpeg',
+          caption: caption || '',
+          media: mediaBase64,
+          fileName: fileName || 'image.jpg',
+        };
+        messageText = caption || '[Imagem]';
+      } else if (mediaType === 'video') {
+        endpoint = 'sendMedia';
+        body = {
+          number: phone,
+          mediatype: 'video',
+          mimetype: mimeType || 'video/mp4',
+          caption: caption || '',
+          media: mediaBase64,
+          fileName: fileName || 'video.mp4',
+        };
+        messageText = caption || '[Vídeo]';
+      } else if (mediaType === 'audio') {
+        endpoint = 'sendWhatsAppAudio';
+        body = {
+          number: phone,
+          audioMessage: {
+            audio: mediaBase64,
+          },
+        };
+        messageText = '[Áudio]';
+      }
+
+      const evolutionUrl = `${instance.base_url}/message/${endpoint}/${instanceName}`;
+      console.log('🌐 Chamando Evolution API (mídia):', evolutionUrl, { mediaType });
+
+      const evolutionResponse = await fetch(evolutionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': evolutionApiKey,
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!evolutionResponse.ok) {
+        const errorText = await evolutionResponse.text();
+        console.error('❌ Erro na Evolution API:', errorText);
+        throw new Error(`Evolution API error: ${evolutionResponse.status}`);
+      }
+
+      evolutionData = await evolutionResponse.json();
+      console.log('✅ Resposta Evolution API (mídia):', evolutionData);
+    } else {
+      // Enviar texto
+      const evolutionUrl = `${instance.base_url}/message/sendText/${instanceName}`;
+      console.log('🌐 Chamando Evolution API (texto):', evolutionUrl);
+
+      const evolutionResponse = await fetch(evolutionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': evolutionApiKey,
+        },
+        body: JSON.stringify({
+          number: phone,
+          text: message,
+        }),
+      });
+
+      if (!evolutionResponse.ok) {
+        const errorText = await evolutionResponse.text();
+        console.error('❌ Erro na Evolution API:', errorText);
+        throw new Error(`Evolution API error: ${evolutionResponse.status}`);
+      }
+
+      evolutionData = await evolutionResponse.json();
+      console.log('✅ Resposta Evolution API (texto):', evolutionData);
     }
-
-    const evolutionData = await evolutionResponse.json();
-    console.log('✅ Resposta Evolution API:', evolutionData);
 
     // Salvar mensagem no banco de dados
     const { data: savedMessage, error: saveError } = await supabase
       .from('lead_messages')
       .insert({
         lead_id: leadId,
-        message_text: message,
+        message_text: messageText,
         is_from_me: true,
         status: 'sent',
         whatsapp_message_id: evolutionData.key?.id || null,
