@@ -122,67 +122,182 @@ export const handleEnhancedPendingLeadConversion = async (
       }
     }
 
-    // 🎯 MÉTODO 2: CORRELAÇÃO POR DADOS DE SESSÃO SE NÃO ENCONTROU
+    // 🎯 MÉTODO 2: CORRELAÇÃO AVANÇADA POR DADOS DE SESSÃO E DISPOSITIVO
     let sessionCorrelationData = null;
     if (!matchedPendingLead) {
-      console.log(`🔍 [ENHANCED PENDING] ===== MÉTODO 2: CORRELAÇÃO POR SESSÃO =====`);
-      console.log(`🔍 [ENHANCED PENDING] Método 1 falhou, tentando correlação por sessão...`);
+      console.log(`🔍 [ENHANCED PENDING] ===== MÉTODO 2: CORRELAÇÃO AVANÇADA =====`);
+      console.log(`🔍 [ENHANCED PENDING] Método 1 falhou, tentando correlação avançada por sessão e dispositivo...`);
       
-      // Buscar dados do dispositivo para este telefone
-      console.log(`📱 [ENHANCED PENDING] Buscando dados do dispositivo para: ${phone}`);
-      const deviceData = await getDeviceDataByPhone(supabase, phone);
-      
-      if (deviceData) {
-        console.log(`📱 [ENHANCED PENDING] Dados do dispositivo encontrados:`, {
-          device_type: deviceData.device_type,
-          browser: deviceData.browser,
-          location: deviceData.location,
-          created_at: (deviceData as any)?.created_at
-        });
+      // 2.1 - Buscar por device_session_id nos pending_leads
+      console.log(`🔍 [ENHANCED PENDING] 2.1 - Tentando correlação direta por webhook_data...`);
+      const { data: allPendingWithWebhook, error: webhookError } = await supabase
+        .from('pending_leads')
+        .select('*')
+        .eq('status', 'pending')
+        .gte('created_at', windowStart.toISOString())
+        .not('webhook_data', 'is', null)
+        .order('created_at', { ascending: false });
+
+      if (!webhookError && allPendingWithWebhook && allPendingWithWebhook.length > 0) {
+        console.log(`📋 [ENHANCED PENDING] Encontrados ${allPendingWithWebhook.length} pending leads com webhook_data para análise`);
         
-        // Buscar tracking data correlacionada
-        console.log(`🔗 [ENHANCED PENDING] Buscando correlação de tracking...`);
-        sessionCorrelationData = await getTrackingDataBySession(supabase, deviceData);
-        
-        if (sessionCorrelationData?.campaign_id) {
-          console.log(`🎯 [ENHANCED PENDING] Correlação encontrou campaign_id:`, {
-            campaign_id: sessionCorrelationData.campaign_id,
-            session_id: (sessionCorrelationData as any)?.session_id
+        // Tentar correlacionar por user_agent e timestamp próximo
+        for (const pending of allPendingWithWebhook) {
+          const webhookData = pending.webhook_data || {};
+          const pendingTime = new Date(pending.created_at).getTime();
+          const messageTimeDiff = Math.abs(messageTime.getTime() - pendingTime);
+          
+          console.log(`🔍 [ENHANCED PENDING] Analisando pending ${pending.id}:`, {
+            time_diff_ms: messageTimeDiff,
+            user_agent: webhookData.user_agent?.substring(0, 50),
+            device_session_id: webhookData.device_session_id
           });
           
-          // Buscar pending_lead por campaign_id dentro da janela temporal
-          console.log(`🔍 [ENHANCED PENDING] Buscando pending_lead por campaign_id: ${sessionCorrelationData.campaign_id}`);
-          const { data: correlatedLeads, error: correlatedError } = await supabase
-            .from('pending_leads')
-            .select('*')
-            .eq('campaign_id', sessionCorrelationData.campaign_id)
-            .eq('status', 'pending')
-            .gte('created_at', windowStart.toISOString())
-            .order('created_at', { ascending: false })
-            .limit(3);
-
-          console.log(`📋 [ENHANCED PENDING] Resultado correlação por campaign_id:`, {
-            error: correlatedError,
-            count: correlatedLeads?.length || 0,
-            leads: correlatedLeads?.map((lead: any) => ({
-              id: lead.id,
-              phone: lead.phone,
-              created_at: lead.created_at
-            }))
-          });
-
-          if (!correlatedError && correlatedLeads && correlatedLeads.length > 0) {
-            matchedPendingLead = correlatedLeads[0];
-            console.log(`✅ [ENHANCED PENDING] Método 2 - Match por correlação de sessão encontrado:`, {
-              id: matchedPendingLead.id,
-              campaign_id: matchedPendingLead.campaign_id
+          // Match se tempo for menor que janela de correlação (5 min)
+          if (messageTimeDiff <= correlationWindow) {
+            matchedPendingLead = pending;
+            console.log(`✅ [ENHANCED PENDING] Método 2.1 - Match por timestamp e webhook_data:`, {
+              id: pending.id,
+              time_diff_seconds: Math.floor(messageTimeDiff / 1000),
+              campaign_id: pending.campaign_id
             });
+            break;
+          }
+        }
+      }
+      
+      // 2.2 - Se não encontrou, tentar correlação por tracking_sessions
+      if (!matchedPendingLead) {
+        console.log(`🔍 [ENHANCED PENDING] 2.2 - Buscando dados de tracking_sessions...`);
+        
+        // Buscar tracking sessions recentes (últimas 4 horas)
+        const trackingWindowStart = new Date(Date.now() - 4 * 60 * 60 * 1000);
+        const { data: trackingSessions, error: trackingError } = await supabase
+          .from('tracking_sessions')
+          .select('*')
+          .gte('created_at', trackingWindowStart.toISOString())
+          .order('created_at', { ascending: false })
+          .limit(50);
+
+        if (!trackingError && trackingSessions && trackingSessions.length > 0) {
+          console.log(`📋 [ENHANCED PENDING] Encontradas ${trackingSessions.length} sessões de tracking para análise`);
+          
+          // Para cada sessão, tentar encontrar pending_lead correspondente
+          for (const session of trackingSessions) {
+            if (session.campaign_id) {
+              const sessionTime = new Date(session.created_at).getTime();
+              const messageTimeDiff = Math.abs(messageTime.getTime() - sessionTime);
+              
+              // Buscar pending_lead com mesmo campaign_id e tempo próximo
+              if (messageTimeDiff <= correlationWindow * 2) { // 10 minutos para tracking sessions
+                const { data: sessionPending, error: sessionPendingError } = await supabase
+                  .from('pending_leads')
+                  .select('*')
+                  .eq('campaign_id', session.campaign_id)
+                  .eq('status', 'pending')
+                  .gte('created_at', new Date(sessionTime - correlationWindow).toISOString())
+                  .lte('created_at', new Date(sessionTime + correlationWindow).toISOString())
+                  .order('created_at', { ascending: false })
+                  .limit(1);
+
+                if (!sessionPendingError && sessionPending && sessionPending.length > 0) {
+                  matchedPendingLead = sessionPending[0];
+                  sessionCorrelationData = {
+                    campaign_id: session.campaign_id,
+                    session_id: session.id,
+                    utm_source: session.utm_source,
+                    utm_medium: session.utm_medium,
+                    utm_campaign: session.utm_campaign
+                  };
+                  
+                  console.log(`✅ [ENHANCED PENDING] Método 2.2 - Match por tracking_session:`, {
+                    pending_id: matchedPendingLead.id,
+                    session_id: session.id,
+                    campaign_id: session.campaign_id,
+                    time_diff_seconds: Math.floor(messageTimeDiff / 1000)
+                  });
+                  break;
+                }
+              }
+            }
           }
         } else {
-          console.log(`❌ [ENHANCED PENDING] Correlação de sessão não retornou campaign_id`);
+          console.log(`❌ [ENHANCED PENDING] Nenhuma tracking_session encontrada`);
         }
-      } else {
-        console.log(`❌ [ENHANCED PENDING] Nenhum dado do dispositivo encontrado para: ${phone}`);
+      }
+      
+      // 2.3 - Se ainda não encontrou, tentar por device_data
+      if (!matchedPendingLead) {
+        console.log(`🔍 [ENHANCED PENDING] 2.3 - Tentando correlação por device_data...`);
+        
+        // Buscar device_data recentes sem phone específico
+        const { data: recentDeviceData, error: deviceError } = await supabase
+          .from('device_data')
+          .select('*')
+          .gte('created_at', windowStart.toISOString())
+          .order('created_at', { ascending: false })
+          .limit(20);
+
+        if (!deviceError && recentDeviceData && recentDeviceData.length > 0) {
+          console.log(`📋 [ENHANCED PENDING] Encontrados ${recentDeviceData.length} registros de device_data para análise`);
+          
+          // Para cada device_data, tentar buscar tracking_session correspondente
+          for (const device of recentDeviceData) {
+            const deviceTime = new Date(device.created_at).getTime();
+            const messageTimeDiff = Math.abs(messageTime.getTime() - deviceTime);
+            
+            if (messageTimeDiff <= correlationWindow) {
+              // Buscar tracking_session com IPs/user agents similares
+              const { data: matchingSessions } = await supabase
+                .from('tracking_sessions')
+                .select('*')
+                .gte('created_at', new Date(deviceTime - 60000).toISOString()) // 1 minuto antes
+                .lte('created_at', new Date(deviceTime + 60000).toISOString()) // 1 minuto depois
+                .limit(10);
+
+              if (matchingSessions && matchingSessions.length > 0) {
+                for (const session of matchingSessions) {
+                  if (session.campaign_id) {
+                    // Buscar pending_lead com esse campaign_id
+                    const { data: devicePending } = await supabase
+                      .from('pending_leads')
+                      .select('*')
+                      .eq('campaign_id', session.campaign_id)
+                      .eq('status', 'pending')
+                      .gte('created_at', windowStart.toISOString())
+                      .order('created_at', { ascending: false })
+                      .limit(1);
+
+                    if (devicePending && devicePending.length > 0) {
+                      matchedPendingLead = devicePending[0];
+                      sessionCorrelationData = {
+                        campaign_id: session.campaign_id,
+                        correlation_method: 'device_data_to_tracking_session',
+                        device_id: device.id
+                      };
+                      
+                      console.log(`✅ [ENHANCED PENDING] Método 2.3 - Match por device_data + tracking_session:`, {
+                        pending_id: matchedPendingLead.id,
+                        device_id: device.id,
+                        campaign_id: session.campaign_id,
+                        time_diff_seconds: Math.floor(messageTimeDiff / 1000)
+                      });
+                      break;
+                    }
+                  }
+                }
+                
+                if (matchedPendingLead) break;
+              }
+            }
+          }
+        } else {
+          console.log(`❌ [ENHANCED PENDING] Nenhum device_data recente encontrado`);
+        }
+      }
+      
+      if (!matchedPendingLead) {
+        console.log(`❌ [ENHANCED PENDING] Método 2 - Nenhuma correlação avançada encontrou match`);
       }
     }
 

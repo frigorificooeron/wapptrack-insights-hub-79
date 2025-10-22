@@ -85,7 +85,14 @@ export const trackRedirect = async (
       console.log('✅ [TRACK REDIRECT] user_id da campanha:', campaignUserId);
       
       // Buscar dados do dispositivo para enriquecer o lead
-      const deviceData = await getDeviceDataByPhone(phone);
+      // Para formulários, pode não ter device data ainda, então é opcional
+      let deviceData = null;
+      try {
+        deviceData = await getDeviceDataByPhone(phone);
+        console.log('📱 [TRACK REDIRECT] Device data encontrado:', !!deviceData);
+      } catch (deviceError) {
+        console.warn('⚠️ [TRACK REDIRECT] Erro ao buscar device data (opcional):', deviceError);
+      }
       
       const leadData = {
         name: name || 'Lead via Tracking',
