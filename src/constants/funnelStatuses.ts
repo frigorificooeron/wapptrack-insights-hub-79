@@ -25,40 +25,19 @@ export const FUNNEL_STATUSES = {
     description: 'Lead tem potencial de compra',
     order: 3
   },
-  proposal: {
-    value: 'proposal',
-    label: 'Proposta',
-    color: 'bg-amber-500',
-    description: 'Proposta comercial enviada',
-    order: 4
-  },
-  negotiating: {
-    value: 'negotiating',
-    label: 'Negociação',
-    color: 'bg-orange-500',
-    description: 'Em processo de negociação',
-    order: 5
-  },
   converted: {
     value: 'converted',
     label: 'Convertido',
     color: 'bg-green-500',
     description: 'Venda fechada com sucesso',
-    order: 6
+    order: 4
   },
   lost: {
     value: 'lost',
     label: 'Perdido',
     color: 'bg-red-500',
     description: 'Não converteu',
-    order: 7
-  },
-  cancelled: {
-    value: 'cancelled',
-    label: 'Cancelado',
-    color: 'bg-gray-500',
-    description: 'Cancelou após conversão',
-    order: 8
+    order: 5
   }
 } as const;
 
@@ -67,15 +46,12 @@ export type FunnelStatus = keyof typeof FUNNEL_STATUSES;
 export const ACTIVE_FUNNEL_STATUSES: FunnelStatus[] = [
   'new',
   'contacted', 
-  'qualified',
-  'proposal',
-  'negotiating'
+  'qualified'
 ];
 
 export const FINAL_STATUSES: FunnelStatus[] = [
   'converted',
-  'lost',
-  'cancelled'
+  'lost'
 ];
 
 export const ALL_STATUSES: FunnelStatus[] = [
