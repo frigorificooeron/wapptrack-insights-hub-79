@@ -141,11 +141,12 @@ export const handleDirectLead = async ({
       status: 'new',
       first_contact_date: new Date().toISOString(),
       last_message: message.message?.conversation || message.message?.extendedTextMessage?.text || 'Mensagem recebida',
-      utm_source: linkedCampaign?.utm_source || finalUtms.utm_source,
-      utm_medium: linkedCampaign?.utm_medium || finalUtms.utm_medium,
-      utm_campaign: linkedCampaign?.utm_campaign || finalUtms.utm_campaign,
-      utm_content: linkedCampaign?.utm_content || finalUtms.utm_content,
-      utm_term: linkedCampaign?.utm_term || finalUtms.utm_term,
+      // 🆕 PRIORIZAR UTMs DA CAMPANHA (Facebook Ads), depois UTM_CLICKS, depois fallback
+      utm_source: linkedCampaign?.utm_source || finalUtms.utm_source || 'whatsapp',
+      utm_medium: linkedCampaign?.utm_medium || finalUtms.utm_medium || 'organic',
+      utm_campaign: linkedCampaign?.utm_campaign || finalUtms.utm_campaign || 'organic',
+      utm_content: linkedCampaign?.utm_content || finalUtms.utm_content || linkedCampaign?.name || null,
+      utm_term: linkedCampaign?.utm_term || finalUtms.utm_term || null,
       tracking_method: linkedCampaign ? 'campaign_whatsapp' : 'direct',
       // Dados do dispositivo se disponíveis
       ...(deviceData && {

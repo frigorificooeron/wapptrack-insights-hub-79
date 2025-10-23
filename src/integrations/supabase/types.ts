@@ -588,6 +588,54 @@ export type Database = {
         }
         Relationships: []
       }
+      utm_sessions: {
+        Row: {
+          campaign_id: string
+          created_at: string | null
+          device_fingerprint: Json | null
+          expires_at: string | null
+          id: string
+          ip_address: string | null
+          session_id: string
+          user_agent: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string | null
+          device_fingerprint?: Json | null
+          expires_at?: string | null
+          id?: string
+          ip_address?: string | null
+          session_id: string
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string | null
+          device_fingerprint?: Json | null
+          expires_at?: string | null
+          id?: string
+          ip_address?: string | null
+          session_id?: string
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Relationships: []
+      }
       whatsapp_instances: {
         Row: {
           base_url: string
@@ -629,6 +677,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_utm_sessions: { Args: never; Returns: undefined }
       create_shared_access_token: {
         Args: {
           p_description?: string

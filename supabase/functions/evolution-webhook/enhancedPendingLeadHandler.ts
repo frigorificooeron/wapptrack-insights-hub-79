@@ -44,7 +44,7 @@ export const handleEnhancedPendingLeadConversion = async (
 
     // Continue with existing methods if CTWA correlation fails
     const messageTime = messageTimestamp ? new Date(messageTimestamp) : new Date();
-    const correlationWindow = 5 * 60 * 1000; // 5 minutos
+    const correlationWindow = 60 * 60 * 1000; // 🆕 60 minutos (aumentado de 5 para melhor rastreamento)
     const windowStart = new Date(messageTime.getTime() - correlationWindow);
     
     console.log(`🕒 [ENHANCED PENDING] Janela de correlação tradicional configurada:`, {
@@ -298,6 +298,94 @@ export const handleEnhancedPendingLeadConversion = async (
       
       if (!matchedPendingLead) {
         console.log(`❌ [ENHANCED PENDING] Método 2 - Nenhuma correlação avançada encontrou match`);
+      }
+    }
+
+    // 🎯 MÉTODO 3: CORRELAÇÃO ESTENDIDA POR CAMPANHA (ATÉ 24 HORAS)
+    if (!matchedPendingLead) {
+      console.log(`🔍 [ENHANCED PENDING] ===== MÉTODO 3: CORRELAÇÃO ESTENDIDA POR CAMPANHA =====`);
+      console.log(`🔍 [ENHANCED PENDING] Buscando pending_leads nas últimas 24 horas...`);
+      
+      const extendedWindow = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 horas
+      
+      // Buscar todos os pending_leads recentes
+      const { data: recentPendingLeads, error: recentError } = await supabase
+        .from('pending_leads')
+        .select('*')
+        .eq('status', 'pending')
+        .gte('created_at', extendedWindow.toISOString())
+        .order('created_at', { ascending: false })
+        .limit(50);
+      
+      if (!recentError && recentPendingLeads && recentPendingLeads.length > 0) {
+        console.log(`📋 [ENHANCED PENDING] Encontrados ${recentPendingLeads.length} pending_leads recentes para análise estendida`);
+        
+        // Tentar match por similaridade de dados
+        for (const pending of recentPendingLeads) {
+          if (pending.campaign_id) {
+            // Match encontrado se campaign_id existir
+            matchedPendingLead = pending;
+            console.log(`✅ [ENHANCED PENDING] Método 3 - Match por correlação estendida (24h):`, {
+              id: pending.id,
+              campaign_id: pending.campaign_id,
+              time_diff_hours: Math.floor((Date.now() - new Date(pending.created_at).getTime()) / (1000 * 60 * 60))
+            });
+            break;
+          }
+        }
+      }
+    }
+
+    // 🎯 MÉTODO 4: BUSCAR UTM_SESSION PERSISTENTE (ATÉ 7 DIAS)
+    let utmSessionData = null;
+    if (!matchedPendingLead) {
+      console.log(`🔍 [ENHANCED PENDING] ===== MÉTODO 4: BUSCAR UTM_SESSION PERSISTENTE =====`);
+      console.log(`🔍 [ENHANCED PENDING] Buscando utm_sessions válidas (até 7 dias)...`);
+      
+      // Buscar utm_sessions não expiradas
+      const { data: utmSessions, error: utmError } = await supabase
+        .from('utm_sessions')
+        .select('*')
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(100);
+      
+      if (!utmError && utmSessions && utmSessions.length > 0) {
+        console.log(`📋 [ENHANCED PENDING] Encontradas ${utmSessions.length} utm_sessions válidas para análise`);
+        
+        // Tentar correlacionar por campaign_id e device fingerprint
+        for (const session of utmSessions) {
+          if (session.campaign_id) {
+            // Buscar pending_lead correspondente
+            const { data: sessionPending } = await supabase
+              .from('pending_leads')
+              .select('*')
+              .eq('campaign_id', session.campaign_id)
+              .eq('status', 'pending')
+              .order('created_at', { ascending: false })
+              .limit(1);
+            
+            if (sessionPending && sessionPending.length > 0) {
+              matchedPendingLead = sessionPending[0];
+              utmSessionData = {
+                utm_source: session.utm_source,
+                utm_medium: session.utm_medium,
+                utm_campaign: session.utm_campaign,
+                utm_content: session.utm_content,
+                utm_term: session.utm_term,
+                recovery_method: 'utm_session_persistent'
+              };
+              
+              console.log(`✅ [ENHANCED PENDING] Método 4 - Match por utm_session persistente:`, {
+                pending_id: matchedPendingLead.id,
+                session_id: session.session_id,
+                campaign_id: session.campaign_id,
+                age_days: Math.floor((Date.now() - new Date(session.created_at).getTime()) / (1000 * 60 * 60 * 24))
+              });
+              break;
+            }
+          }
+        }
       }
     }
 

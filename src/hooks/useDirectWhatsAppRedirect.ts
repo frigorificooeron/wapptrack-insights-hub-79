@@ -181,6 +181,39 @@ export const useDirectWhatsAppRedirect = (
         // Continuar mesmo com erro para não bloquear o redirecionamento
       }
 
+      // 🆕 SALVAR UTM_SESSION PERSISTENTE (ATÉ 7 DIAS)
+      try {
+        console.log('💾 [DIRECT WHATSAPP] Salvando utm_session persistente...');
+        
+        const { error: utmSessionError } = await supabase
+          .from('utm_sessions')
+          .insert({
+            campaign_id: campaignId!,
+            session_id: deviceSessionId,
+            utm_source: currentUtms.utm_source || campaignData.utm_source || null,
+            utm_medium: currentUtms.utm_medium || campaignData.utm_medium || null,
+            utm_campaign: currentUtms.utm_campaign || campaignData.utm_campaign || null,
+            utm_content: currentUtms.utm_content || campaignData.utm_content || null,
+            utm_term: currentUtms.utm_term || campaignData.utm_term || null,
+            device_fingerprint: {
+              user_agent: navigator.userAgent,
+              screen_resolution: `${screen.width}x${screen.height}`,
+              language: navigator.language,
+              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+              device_session_id: deviceSessionId
+            },
+            user_agent: navigator.userAgent
+          });
+        
+        if (utmSessionError) {
+          console.error('❌ [DIRECT WHATSAPP] Erro ao salvar utm_session:', utmSessionError);
+        } else {
+          console.log('✅ [DIRECT WHATSAPP] UTM_SESSION persistente salva com sucesso (válida por 7 dias)');
+        }
+      } catch (utmSessionErr) {
+        console.warn('⚠️ [DIRECT WHATSAPP] Erro ao salvar utm_session, continuando...:', utmSessionErr);
+      }
+
       // 🆕 SALVAR DADOS DE TRACKING COM IDENTIFICADORES CTWA EXPANDIDOS
       try {
         console.log('📊 [DIRECT WHATSAPP] Salvando dados de tracking CTWA...');
