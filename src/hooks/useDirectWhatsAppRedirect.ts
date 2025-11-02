@@ -37,6 +37,16 @@ export const useDirectWhatsAppRedirect = (
 ) => {
   const { captureAndSave } = useDeviceData();
 
+  // 🆔 Gerar ID único de rastreamento (6 caracteres alfanuméricos)
+  const generateTrackingId = (): string => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let id = '';
+    for (let i = 0; i < 6; i++) {
+      id += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return id;
+  };
+
   const handleDirectWhatsAppRedirect = async (
     campaignData: Campaign,
     options?: {
@@ -65,6 +75,10 @@ export const useDirectWhatsAppRedirect = (
       // ✅ COLETA UTMs DA URL ATUAL SE NÃO FORAM FORNECIDOS
       const currentUtms = options?.utms || collectUrlParameters();
       console.log('🌐 [DIRECT WHATSAPP] UTMs coletados:', currentUtms);
+
+      // 🆔 GERAR ID ÚNICO DE RASTREAMENTO
+      const leadTrackingId = generateTrackingId();
+      console.log('🆔 [DIRECT WHATSAPP] ID único gerado:', leadTrackingId);
 
       // 🆕 COLETAR E SALVAR DADOS CTWA SE DISPONÍVEL
       let ctwaTrackingResult = null;
@@ -98,10 +112,10 @@ export const useDirectWhatsAppRedirect = (
         deviceSessionId = `fallback_${Date.now()}`;
       }
 
-      // 🆕 CRIAR PENDING_LEAD COM DADOS CTWA EXPANDIDOS
+      // 🆕 CRIAR PENDING_LEAD COM DADOS CTWA EXPANDIDOS + ID ÚNICO
       let pendingLeadId = null;
       try {
-        console.log('📋 [DIRECT WHATSAPP] ===== CRIANDO PENDING_LEAD COM CTWA =====');
+        console.log('📋 [DIRECT WHATSAPP] ===== CRIANDO PENDING_LEAD COM CTWA + ID ÚNICO =====');
         
         const pendingLeadData = {
           campaign_id: campaignId!,
@@ -109,6 +123,7 @@ export const useDirectWhatsAppRedirect = (
           name: options?.name || 'Visitante',
           phone: 'PENDING_CONTACT', // Placeholder até receber mensagem no WhatsApp
           status: 'pending',
+          lead_tracking_id: leadTrackingId, // 🆔 ID ÚNICO
           utm_source: currentUtms.utm_source || '',
           utm_medium: currentUtms.utm_medium || '',
           utm_campaign: currentUtms.utm_campaign || '',
@@ -142,13 +157,16 @@ export const useDirectWhatsAppRedirect = (
             correlation_window: 300000, // 5 minutos em ms
             redirect_type: 'direct_whatsapp_ctwa',
             campaign_click_id: `click_${campaignId}_${Date.now()}`,
-            ctwa_tracking_id: ctwaTrackingResult?.success ? 'saved' : 'failed'
+            ctwa_tracking_id: ctwaTrackingResult?.success ? 'saved' : 'failed',
+            // 🆔 ID ÚNICO PARA MATCHING 100%
+            lead_tracking_id: leadTrackingId
           }
         };
 
         console.log('💾 [DIRECT WHATSAPP] Dados do pending_lead CTWA que serão inseridos:', {
           campaign_id: pendingLeadData.campaign_id,
           campaign_name: pendingLeadData.campaign_name,
+          lead_tracking_id: leadTrackingId,
           ctwa_clid: currentUtms.ctwa_clid,
           source_url: currentUtms.source_url,
           device_session_id: deviceSessionId,
@@ -170,6 +188,7 @@ export const useDirectWhatsAppRedirect = (
         console.log('✅ [DIRECT WHATSAPP] PENDING_LEAD CTWA CRIADO COM SUCESSO:', {
           id: data.id,
           campaign_id: data.campaign_id,
+          lead_tracking_id: leadTrackingId,
           ctwa_clid: currentUtms.ctwa_clid,
           phone: data.phone,
           status: data.status,
@@ -200,7 +219,8 @@ export const useDirectWhatsAppRedirect = (
               screen_resolution: `${screen.width}x${screen.height}`,
               language: navigator.language,
               timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-              device_session_id: deviceSessionId
+              device_session_id: deviceSessionId,
+              lead_tracking_id: leadTrackingId // 🆔 Incluir ID único
             },
             user_agent: navigator.userAgent
           });
@@ -225,6 +245,7 @@ export const useDirectWhatsAppRedirect = (
           correlation_window: 300000, // 5 minutos
           tracking_method: 'direct_whatsapp_ctwa_enhanced',
           pending_lead_id: pendingLeadId,
+          lead_tracking_id: leadTrackingId, // 🆔 ID único
           // 🆕 Dados CTWA específicos
           ctwa_correlation_ready: !!currentUtms.ctwa_clid
         };
@@ -236,6 +257,7 @@ export const useDirectWhatsAppRedirect = (
             device_session_id: deviceSessionId,
             campaign_id: campaignId,
             pending_lead_id: pendingLeadId,
+            lead_tracking_id: leadTrackingId,
             ctwa_clid: currentUtms.ctwa_clid
           });
         }
@@ -253,6 +275,7 @@ export const useDirectWhatsAppRedirect = (
             campaign_name: campaignData.name,
             device_session_id: deviceSessionId,
             pending_lead_id: pendingLeadId,
+            lead_tracking_id: leadTrackingId,
             ctwa_clid: currentUtms.ctwa_clid
           });
           console.log('✅ [DIRECT WHATSAPP] Tracking avançado CTWA executado com sucesso');
@@ -261,11 +284,16 @@ export const useDirectWhatsAppRedirect = (
         }
       }
 
+      // 🆔 Incluir ID único no início da mensagem para rastreamento perfeito
+      const baseMessage = campaignData.custom_message || 
+                         `Olá! Vim pelo ${campaignData.name}. Quero mais informações!`;
+      const message = `[${leadTrackingId}] ${baseMessage}`;
+
       // Monta a URL do WhatsApp com mensagem personalizada
       let whatsappUrl = `https://wa.me/${campaignData.whatsapp_number}`;
 
-      if (campaignData.custom_message) {
-        const encodedMessage = encodeURIComponent(campaignData.custom_message);
+      if (message) {
+        const encodedMessage = encodeURIComponent(message);
         whatsappUrl += `?text=${encodedMessage}`;
       }
 
@@ -274,6 +302,7 @@ export const useDirectWhatsAppRedirect = (
       console.log('📋 [DIRECT WHATSAPP] Resumo da sessão CTWA:', {
         campaignId,
         campaignName: campaignData.name,
+        leadTrackingId,
         pendingLeadId,
         deviceSessionId,
         ctwa_clid: currentUtms.ctwa_clid,

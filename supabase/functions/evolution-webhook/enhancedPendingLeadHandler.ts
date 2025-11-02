@@ -2,7 +2,7 @@ import { getDeviceDataByPhone } from './deviceDataHandler.ts';
 import { getTrackingDataBySession } from './sessionTrackingHandler.ts';
 import { handleCTWACorrelation } from './ctwaCorrelationHandler.ts';
 
-// 🆕 HANDLER MELHORADO COM MÉTODOS 1 + 2 + CTWA COMBINADOS + LOGS DETALHADOS
+// 🆕 HANDLER MELHORADO COM MÉTODOS 0 (ID ÚNICO) + 1 + 2 + CTWA COMBINADOS + LOGS DETALHADOS
 export const handleEnhancedPendingLeadConversion = async (
   supabase: any, 
   phone: string, 
@@ -12,7 +12,7 @@ export const handleEnhancedPendingLeadConversion = async (
   contactName?: string,
   messageTimestamp?: string
 ) => {
-  console.log(`🔄 [ENHANCED PENDING] ===== INICIANDO CONVERSÃO MELHORADA COM CTWA =====`);
+  console.log(`🔄 [ENHANCED PENDING] ===== INICIANDO CONVERSÃO MELHORADA COM ID ÚNICO + CTWA =====`);
   console.log(`🔄 [ENHANCED PENDING] Parâmetros recebidos:`, {
     phone,
     messageText: messageText?.substring(0, 100),
@@ -23,7 +23,175 @@ export const handleEnhancedPendingLeadConversion = async (
   });
   
   try {
-    // 🎯 MÉTODO CTWA: TENTAR CORRELAÇÃO CTWA PRIMEIRO
+    // 🆔 MÉTODO 0: BUSCAR POR ID ÚNICO NA MENSAGEM (100% PRECISÃO)
+    console.log('🆔 [ENHANCED PENDING] ===== MÉTODO 0: BUSCA POR ID ÚNICO =====');
+    const trackingIdMatch = messageText?.match(/\[([A-Z0-9]{6})\]/);
+    const leadTrackingId = trackingIdMatch ? trackingIdMatch[1] : null;
+
+    if (leadTrackingId) {
+      console.log('🎯 [METHOD 0] ID único encontrado na mensagem:', leadTrackingId);
+      
+      const { data: pendingByTracking, error: trackingError } = await supabase
+        .from('pending_leads')
+        .select('*')
+        .eq('lead_tracking_id', leadTrackingId)
+        .eq('status', 'pending')
+        .maybeSingle();
+
+      if (trackingError) {
+        console.error('❌ [METHOD 0] Erro ao buscar por tracking ID:', trackingError);
+      }
+
+      if (pendingByTracking) {
+        console.log('✅ [METHOD 0] Pending lead encontrado por ID único! Conversão 100% precisa');
+        console.log('📋 [METHOD 0] Dados do pending_lead:', {
+          id: pendingByTracking.id,
+          campaign_id: pendingByTracking.campaign_id,
+          name: pendingByTracking.name,
+          created_at: pendingByTracking.created_at
+        });
+        
+        // Limpar o ID da mensagem antes de prosseguir
+        const cleanedMessage = messageText.replace(/\[([A-Z0-9]{6})\]\s*/, '');
+        console.log('🧹 [METHOD 0] Mensagem limpa:', cleanedMessage);
+        
+        // Usar o pending_lead encontrado e continuar com o fluxo normal
+        const matchedPendingLead = pendingByTracking;
+        const messageTime = messageTimestamp ? new Date(messageTimestamp) : new Date();
+        
+        // Buscar user_id da campanha
+        let campaignUserId = null;
+        if (matchedPendingLead.campaign_id) {
+          console.log(`🔍 [METHOD 0] Buscando user_id para campaign_id: ${matchedPendingLead.campaign_id}`);
+          const { data: campaign, error: campaignError } = await supabase
+            .from('campaigns')
+            .select('user_id, name')
+            .eq('id', matchedPendingLead.campaign_id)
+            .maybeSingle();
+
+          if (campaign && !campaignError) {
+            campaignUserId = campaign.user_id;
+            console.log('✅ [METHOD 0] User ID da campanha encontrado:', campaignUserId);
+          }
+        }
+
+        // Buscar dados do dispositivo
+        const deviceData = await getDeviceDataByPhone(supabase, phone);
+        
+        // Preparar dados do lead
+        const finalName = (matchedPendingLead.name && matchedPendingLead.name !== 'Visitante') 
+          ? matchedPendingLead.name 
+          : (contactName || 'Lead via WhatsApp');
+
+        // Verificar se já existe lead
+        const { data: existingLead } = await supabase
+          .from('leads')
+          .select('*')
+          .eq('phone', phone)
+          .limit(1);
+
+        const webhookData = matchedPendingLead.webhook_data || {};
+        
+        if (existingLead && existingLead.length > 0) {
+          // Atualizar lead existente
+          console.log('🔄 [METHOD 0] Atualizando lead existente');
+          const { error: updateError } = await supabase
+            .from('leads')
+            .update({
+              last_contact_date: new Date().toISOString(),
+              last_message: cleanedMessage,
+              evolution_message_id: messageId,
+              evolution_status: status,
+              lead_tracking_id: leadTrackingId,
+              utm_source: matchedPendingLead.utm_source || existingLead[0].utm_source,
+              utm_medium: matchedPendingLead.utm_medium || existingLead[0].utm_medium,
+              utm_campaign: matchedPendingLead.utm_campaign || existingLead[0].utm_campaign,
+              utm_content: matchedPendingLead.utm_content || existingLead[0].utm_content,
+              utm_term: matchedPendingLead.utm_term || existingLead[0].utm_term
+            })
+            .eq('id', existingLead[0].id);
+
+          if (updateError) {
+            console.error('❌ [METHOD 0] Erro ao atualizar lead:', updateError);
+          } else {
+            console.log('✅ [METHOD 0] Lead atualizado com sucesso');
+          }
+        } else {
+          // Criar novo lead
+          console.log('➕ [METHOD 0] Criando novo lead');
+          const newLeadData = {
+            user_id: campaignUserId,
+            campaign_id: matchedPendingLead.campaign_id,
+            campaign: matchedPendingLead.campaign_name,
+            name: finalName,
+            phone: phone,
+            status: 'new',
+            first_contact_date: new Date().toISOString(),
+            last_contact_date: new Date().toISOString(),
+            initial_message: cleanedMessage,
+            last_message: cleanedMessage,
+            evolution_message_id: messageId,
+            evolution_status: status,
+            lead_tracking_id: leadTrackingId,
+            utm_source: matchedPendingLead.utm_source || webhookData.site_source_name,
+            utm_medium: matchedPendingLead.utm_medium,
+            utm_campaign: matchedPendingLead.utm_campaign,
+            utm_content: matchedPendingLead.utm_content,
+            utm_term: matchedPendingLead.utm_term,
+            ...(deviceData && {
+              location: deviceData.location,
+              ip_address: deviceData.ip_address,
+              browser: deviceData.browser,
+              os: deviceData.os,
+              device_type: deviceData.device_type,
+              device_model: deviceData.device_model,
+              country: deviceData.country,
+              city: deviceData.city,
+              screen_resolution: deviceData.screen_resolution,
+              timezone: deviceData.timezone,
+              language: deviceData.language,
+              facebook_ad_id: deviceData.facebook_ad_id || webhookData.facebook_ad_id,
+              facebook_adset_id: deviceData.facebook_adset_id || webhookData.facebook_adset_id,
+              facebook_campaign_id: deviceData.facebook_campaign_id || webhookData.facebook_campaign_id
+            })
+          };
+
+          const { error: insertError } = await supabase
+            .from('leads')
+            .insert(newLeadData);
+
+          if (insertError) {
+            console.error('❌ [METHOD 0] Erro ao criar lead:', insertError);
+          } else {
+            console.log('✅ [METHOD 0] Lead criado com sucesso');
+          }
+        }
+
+        // Marcar pending_lead como convertido
+        const { error: updatePendingError } = await supabase
+          .from('pending_leads')
+          .update({ 
+            status: 'converted',
+            phone: phone
+          })
+          .eq('id', matchedPendingLead.id);
+
+        if (updatePendingError) {
+          console.error('❌ [METHOD 0] Erro ao marcar pending_lead como convertido:', updatePendingError);
+        } else {
+          console.log('✅ [METHOD 0] Pending lead marcado como convertido');
+        }
+
+        console.log('🎉 [METHOD 0] CONVERSÃO POR ID ÚNICO CONCLUÍDA COM SUCESSO!');
+        return true;
+      } else {
+        console.log('⚠️ [METHOD 0] ID único não encontrado ou já convertido, tentando outros métodos...');
+      }
+    } else {
+      console.log('ℹ️ [METHOD 0] Nenhum ID único encontrado na mensagem, usando métodos alternativos');
+    }
+
+    // 🎯 MÉTODO CTWA: TENTAR CORRELAÇÃO CTWA
     console.log('🎯 [ENHANCED PENDING] ===== TENTANDO CORRELAÇÃO CTWA =====');
     const ctwaCorrelationResult = await handleCTWACorrelation(
       supabase,

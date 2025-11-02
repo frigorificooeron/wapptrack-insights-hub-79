@@ -14,6 +14,16 @@ export const useFormSubmission = (
 ) => {
   const { trackEnhancedLead } = useEnhancedPixelTracking(campaign);
 
+  // 🆔 Gerar ID único de rastreamento (6 caracteres alfanuméricos)
+  const generateTrackingId = (): string => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let id = '';
+    for (let i = 0; i < 6; i++) {
+      id += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return id;
+  };
+
   const updateLeadWhatsAppStatus = async (leadId: string, delivered: boolean) => {
     try {
       const status: Lead['status'] = delivered ? 'contacted' : 'new';
@@ -115,7 +125,11 @@ export const useFormSubmission = (
       
       console.log('✅ [FORM SUBMISSION] trackRedirect executado com sucesso:', result);
       
-      // Build WhatsApp URL with custom message
+      // 🆔 Gerar ID único e incluir na mensagem
+      const leadTrackingId = generateTrackingId();
+      console.log('🆔 [FORM] ID único gerado:', leadTrackingId);
+
+      // Build WhatsApp URL with custom message + tracking ID
       let whatsappUrl = `https://wa.me/${campaign.whatsapp_number}`;
       
       if (campaign.custom_message) {
@@ -125,7 +139,9 @@ export const useFormSubmission = (
         }
         message = message.replace(/\{telefone\}/gi, phone);
         
-        const encodedMessage = encodeURIComponent(message);
+        // 🆔 Incluir ID único no início da mensagem
+        const messageWithId = `[${leadTrackingId}] ${message}`;
+        const encodedMessage = encodeURIComponent(messageWithId);
         whatsappUrl += `?text=${encodedMessage}`;
       }
       

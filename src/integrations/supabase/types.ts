@@ -349,6 +349,7 @@ export type Database = {
           last_contact_date: string | null
           last_message: string | null
           last_whatsapp_attempt: string | null
+          lead_tracking_id: string | null
           location: string | null
           name: string
           notes: string | null
@@ -393,6 +394,7 @@ export type Database = {
           last_contact_date?: string | null
           last_message?: string | null
           last_whatsapp_attempt?: string | null
+          lead_tracking_id?: string | null
           location?: string | null
           name: string
           notes?: string | null
@@ -437,6 +439,7 @@ export type Database = {
           last_contact_date?: string | null
           last_message?: string | null
           last_whatsapp_attempt?: string | null
+          lead_tracking_id?: string | null
           location?: string | null
           name?: string
           notes?: string | null
@@ -463,6 +466,7 @@ export type Database = {
           campaign_name: string | null
           created_at: string
           id: string
+          lead_tracking_id: string | null
           name: string
           phone: string
           status: string | null
@@ -479,6 +483,7 @@ export type Database = {
           campaign_name?: string | null
           created_at?: string
           id?: string
+          lead_tracking_id?: string | null
           name: string
           phone: string
           status?: string | null
@@ -495,6 +500,7 @@ export type Database = {
           campaign_name?: string | null
           created_at?: string
           id?: string
+          lead_tracking_id?: string | null
           name?: string
           phone?: string
           status?: string | null
